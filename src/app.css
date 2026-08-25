@@ -4,6 +4,14 @@
 	box-sizing: border-box;
 }
 
+:root {
+	--color-dark: #1e3a8a;
+	--color-main: #2f5fc0;
+	--color-light: #a9c2ee;
+	--color-white: #fff;
+	--color-black: #000;
+}
+
 html,
 body {
 	height: 100%;

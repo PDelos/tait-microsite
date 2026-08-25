@@ -12,7 +12,7 @@
 
   # Set default environment variables
   env = {
-    DATABASE_PATH = "./data/tait.db";
+    DATABASE_URL = "postgresql://neondb_owner:npg_kHihF35oVaJu@ep-mute-bird-b1dzgdwk-pooler.c-5.eu-central-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
     ADMIN_PASSWORD = "dev-admin-secret-password";
   };
 

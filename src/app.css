@@ -1,0 +1,27 @@
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	height: 100%;
+	margin: 0;
+	padding: 0;
+
+	/* Hide scrollbars (Firefox / IE / Edge) */
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+/* Hide scrollbars (Chrome / Safari / WebKit) */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+	display: none;
+}
+
+section {
+	height: 100dvh;
+	width: 100%;
+}

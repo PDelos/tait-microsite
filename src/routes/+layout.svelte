@@ -1,5 +1,6 @@
 <script lang="ts">
 	import favicon from '$lib/assets/logo_tait.svg';
+	import '../app.css';
 
 	let { children } = $props();
 </script>

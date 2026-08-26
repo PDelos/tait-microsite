@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Hero from '$lib/components/Hero.svelte';
-	import Intro from '$lib/components/Intro.svelte';
+	import Opening from '$lib/components/Opening.svelte';
 	import Form from '$lib/components/Form.svelte';
 	import Agenda from '$lib/components/Agenda.svelte';
 	import Logistics from '$lib/components/Logistics.svelte';
@@ -9,7 +9,7 @@
 
 <main>
 	<Hero />
-	<Intro />
+	<Opening />
 	<Form />
 	<Agenda />
 	<Logistics />

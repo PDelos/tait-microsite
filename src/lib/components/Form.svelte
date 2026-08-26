@@ -65,9 +65,9 @@
 
 {#if step === 1}
 	<section class="form">
-		<h1 class="form__title">Nos gustaría saber...</h1>
+		<h1 class="form__title title">Nos gustaría saber...</h1>
 
-		<div class="form__field">
+		<div class="form__field stack">
 			<label class="form__label" for="nombre">Nombre y Apellido</label>
 			<input
 				class="form__input"
@@ -78,7 +78,7 @@
 			/>
 		</div>
 
-		<div class="form__field">
+		<div class="form__field stack">
 			<h3 class="form__subtitle">Voy a ir con:</h3>
 			<label class="form__radio">
 				<input type="radio" bind:group={transporte} value="vehiculo" />
@@ -91,7 +91,7 @@
 			</label>
 		</div>
 
-		<div class="form__field">
+		<div class="form__field stack">
 			<h3 class="form__subtitle">Tengo intolerancias o restricciones alimentarias</h3>
 			<label class="form__radio"
 				><input type="radio" bind:group={restriccion} value="No" /> No</label
@@ -124,29 +124,29 @@
 			{/if}
 		</div>
 
-		<div class="form__field">
+		<div class="form__field stack">
 			<h3 class="form__subtitle">Talla de camiseta</h3>
 			{@render radioGroup('talla', talla, (v) => (talla = v), TALLAS)}
 		</div>
 
-		<h2 class="form__title">¿Qué te apetece almorzar?</h2>
+		<h2 class="form__subtitle">¿Qué te apetece almorzar?</h2>
 
 		{#each Object.entries(MENU) as [key, options]}
-			<div class="form__field">
+			<div class="form__field stack">
 				<h3 class="form__subtitle">{MENU_LABELS[key as MenuKey]} (elige uno)</h3>
 				{@render radioGroup(key, menu[key as MenuKey], (v) => (menu[key as MenuKey] = v), options)}
 			</div>
 		{/each}
 
-		<button class="form__button" type="button" onclick={next}>Siguiente</button>
+		<button class="btn" type="button" onclick={next}>Siguiente</button>
 	</section>
 {/if}
 
 {#if step === 2}
 	<section class="form">
-		<h1 class="form__title">Nos gustaría saber...</h1>
+		<h1 class="form__title title">Nos gustaría saber...</h1>
 
-		<div class="form__field">
+		<div class="form__field stack">
 			<label class="form__label" for="recuerdo">¿Cuál es tu recuerdo favorito en TAIT?</label>
 			<textarea
 				class="form__textarea"
@@ -155,20 +155,22 @@
 				placeholder="Escribir aquí"></textarea>
 		</div>
 
-		<div class="form__field">
+		<div class="form__field stack">
 			<label class="form__label" for="deseo">¿Qué deseas para los futuros 10 años en TAIT?</label>
 			<textarea class="form__textarea" id="deseo" bind:value={deseo} placeholder="Escribir aquí"
 			></textarea>
 		</div>
 
-		<button class="form__button form__button--ghost" type="button" onclick={edit}>← Editar</button>
-		<button class="form__button" type="button" onclick={next}>Siguiente</button>
+		<div class="form__actions">
+			<button class="btn btn--secondary" type="button" onclick={edit}>← Editar</button>
+			<button class="btn" type="button" onclick={next}>Siguiente</button>
+		</div>
 	</section>
 {/if}
 
 {#if step === 3}
 	<section class="summary">
-		<h1 class="summary__title">¡Enviado!</h1>
+		<h1 class="summary__title title">¡Enviado!</h1>
 
 		<div class="summary__card">
 			<p class="summary__label">Nombre y Apellido</p>
@@ -203,8 +205,156 @@
 			{/each}
 		</div>
 
-		<button class="summary__button summary__button--ghost" type="button" onclick={edit}
-			>Editar</button
-		>
+		<button class="btn btn--secondary" type="button" onclick={edit}>Editar</button>
 	</section>
 {/if}
+
+<style>
+	.form,
+	.summary {
+		align-items: center;
+		gap: 2.5rem;
+		padding: 4rem var(--gutter) 5rem;
+		overflow-y: auto;
+		text-align: center;
+	}
+
+	.form__field {
+		align-items: flex-start;
+		gap: 1.25rem;
+		width: 100%;
+		max-width: 40rem;
+		text-align: left;
+	}
+
+	.form__label,
+	.form__subtitle {
+		margin: 0;
+		font-size: 1.5rem;
+		font-weight: 400;
+		letter-spacing: -0.03em;
+		color: var(--color-black);
+	}
+
+	.form__input,
+	.form__textarea {
+		width: 100%;
+		max-width: 33rem;
+		padding: 0.75rem 1.2rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-input);
+		font-family: inherit;
+		font-size: 1.125rem;
+		letter-spacing: -0.03em;
+		color: var(--color-black);
+		background: var(--color-white);
+	}
+
+	.form__input::placeholder,
+	.form__textarea::placeholder {
+		color: var(--color-black);
+		opacity: 0.5;
+	}
+
+	.form__textarea {
+		max-width: none;
+		min-height: 9rem;
+		resize: vertical;
+	}
+
+	.form__radio {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.6rem;
+		font-size: 1.125rem;
+		letter-spacing: -0.03em;
+		color: var(--color-black);
+		cursor: pointer;
+	}
+
+	.form__radio input[type='radio'] {
+		appearance: none;
+		width: 1.25rem;
+		height: 1.25rem;
+		margin: 0;
+		flex-shrink: 0;
+		border: 1px solid var(--color-border);
+		border-radius: 50%;
+		display: grid;
+		place-content: center;
+	}
+
+	.form__radio input[type='radio']::before {
+		content: '';
+		width: 0.65rem;
+		height: 0.65rem;
+		border-radius: 50%;
+		background: var(--color-main);
+		transform: scale(0);
+		transition: transform 0.15s ease;
+	}
+
+	.form__radio input[type='radio']:checked::before {
+		transform: scale(1);
+	}
+
+	.form__detail {
+		display: block;
+		margin-top: 0.35rem;
+		margin-left: 1.85rem;
+		font-size: 0.875rem;
+		letter-spacing: -0.03em;
+		opacity: 0.7;
+	}
+
+	.form__tag {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.6rem;
+		padding: 0.4rem 0.9rem;
+		border-radius: var(--radius-pill);
+		background: rgba(12, 67, 146, 0.08);
+		color: var(--color-main);
+		font-size: 1rem;
+	}
+
+	.form__tag-remove {
+		border: none;
+		background: none;
+		color: inherit;
+		cursor: pointer;
+		font-size: 0.9rem;
+		line-height: 1;
+		padding: 0;
+	}
+
+	.form__actions {
+		display: flex;
+		gap: 1.25rem;
+	}
+
+	.summary__card {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.5rem 3rem;
+		width: 100%;
+		max-width: 50rem;
+		padding: 2.5rem;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-card);
+		text-align: left;
+	}
+
+	.summary__label {
+		margin: 0;
+		font-size: 1rem;
+		color: var(--color-black);
+		opacity: 0.6;
+	}
+
+	.summary__value {
+		margin: 0.35rem 0 0;
+		font-size: 1.125rem;
+		color: var(--color-black);
+	}
+</style>

@@ -42,9 +42,9 @@
 		<div class="flex items-center justify-between gap-4">
 			<p class="text-[3rem] lg:text-[2rem]">{card.title}</p>
 
-			<span class="btn shrink-0 bg-white text-black">
+			<span class="btn bg-white text-black">
 				{card.buttonLabel}
-				<img src={card.buttonIcon} alt="" class="ml-3 size-4" />
+				<img src={card.buttonIcon} alt="" class="size-4" />
 			</span>
 		</div>
 
@@ -59,7 +59,7 @@
 <section id="logistics" class="justify-center p-10">
 	<div class="mb-10 flex flex-col gap-8 pt-20">
 		<h2 class="heading">Logística</h2>
-		<p class="text-[2rem] text-primary lg:text-[1.125rem]">El 29 de septiembre de 2026</p>
+		<p class="subtitle">El 29 de septiembre de 2026</p>
 	</div>
 
 	<div class="flex w-full flex-col gap-8 md:flex-row">

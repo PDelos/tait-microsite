@@ -7,6 +7,7 @@
 
 import { neon } from '@neondatabase/serverless';
 import { env } from '$env/dynamic/private';
+import { createSchema } from './schema';
 
 const DATABASE_URL = env.DATABASE_URL;
 
@@ -16,24 +17,14 @@ if (!DATABASE_URL) {
 
 export const sql = neon(DATABASE_URL);
 
-await sql`
-  CREATE TABLE IF NOT EXISTS rsvps (
-    id                              SERIAL PRIMARY KEY,
-    creado_en                       TIMESTAMPTZ NOT NULL DEFAULT now(),
-    nombre_completo                 TEXT NOT NULL,
-    transporte                      TEXT NOT NULL CHECK (transporte IN ('vehiculo_propio', 'bus')),
-    tiene_restriccion_alimentaria   BOOLEAN NOT NULL DEFAULT false,
-    detalle_restriccion_alimentaria TEXT,
-    vegetariano                     BOOLEAN NOT NULL DEFAULT false,
-    vegano                          BOOLEAN NOT NULL DEFAULT false,
-    talla_camiseta                  TEXT NOT NULL CHECK (talla_camiseta IN ('S', 'M', 'L', 'XL', 'XXL')),
-    entrante                        TEXT NOT NULL CHECK (entrante IN ('arroz_setas_jamon', 'ensalada_langostinos')),
-    principal                       TEXT NOT NULL CHECK (principal IN ('solomillo_ternera', 'colita_rape')),
-    postre                          TEXT NOT NULL CHECK (postre IN ('lemon_pie', 'coulant_chocolate')),
-    recuerdo_favorito               TEXT,
-    deseo_futuro                    TEXT
-  );
-`;
+// The table is created lazily rather than at module scope, so importing this file
+// never blocks on a round trip and the CREATE runs at most once per warm instance.
+let schemaReady: Promise<void> | null = null;
+
+export function ensureSchema(): Promise<void> {
+	schemaReady ??= createSchema(sql);
+	return schemaReady;
+}
 
 export interface Rsvp {
 	id: number;
@@ -45,11 +36,14 @@ export interface Rsvp {
 	vegetariano: boolean;
 	vegano: boolean;
 	talla_camiseta: 'S' | 'M' | 'L' | 'XL' | 'XXL';
-	entrante: 'arroz_setas_jamon' | 'ensalada_langostinos';
-	principal: 'solomillo_ternera' | 'colita_rape';
-	postre: 'lemon_pie' | 'coulant_chocolate';
+	entrante: 'arroz_setas_jamon' | 'ensalada_langostinos' | null;
+	principal: 'solomillo_ternera' | 'colita_rape' | null;
+	postre: 'lemon_pie' | 'coulant_chocolate' | null;
 	recuerdo_favorito: string | null;
 	deseo_futuro: string | null;
+	entrevista: 'si' | 'no' | null;
+	/** Vercel Blob pathnames of the photos this person uploaded. */
+	fotos: string[];
 }
 
 export type NewRsvp = Omit<Rsvp, 'id' | 'creado_en'>;
@@ -60,13 +54,14 @@ export async function insertRsvp(input: NewRsvp): Promise<number> {
       nombre_completo, transporte,
       tiene_restriccion_alimentaria, detalle_restriccion_alimentaria, vegetariano, vegano,
       talla_camiseta, entrante, principal, postre,
-      recuerdo_favorito, deseo_futuro
+      recuerdo_favorito, deseo_futuro, entrevista, fotos
     ) VALUES (
       ${input.nombre_completo}, ${input.transporte},
       ${input.tiene_restriccion_alimentaria}, ${input.detalle_restriccion_alimentaria},
       ${input.vegetariano}, ${input.vegano},
       ${input.talla_camiseta}, ${input.entrante}, ${input.principal}, ${input.postre},
-      ${input.recuerdo_favorito}, ${input.deseo_futuro}
+      ${input.recuerdo_favorito}, ${input.deseo_futuro}, ${input.entrevista},
+      ${input.fotos}::text[]
     )
     RETURNING id
   `;

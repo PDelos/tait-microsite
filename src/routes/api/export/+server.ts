@@ -1,89 +1,93 @@
-import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { env } from '$env/dynamic/private';
-import { timingSafeEqual } from 'node:crypto';
 import { stringify } from 'csv-stringify/sync';
-import { getAllRsvps, type Rsvp } from '$lib/server/db';
+import { requireAdmin } from '$lib/server/admin';
+import { rsvpFolder } from '$lib/server/export';
+import { ensureSchema, getAllRsvps, type Rsvp } from '$lib/server/db';
 
-const COLUMNS: { key: keyof Rsvp; header: string }[] = [
-	{ key: 'id', header: 'ID' },
-	{ key: 'creado_en', header: 'Fecha de inscripción' },
-	{ key: 'nombre_completo', header: 'Nombre y Apellido' },
-	{ key: 'transporte', header: 'Transporte' },
-	{ key: 'tiene_restriccion_alimentaria', header: 'Intolerancias/restricciones' },
-	{ key: 'detalle_restriccion_alimentaria', header: 'Detalle intolerancias' },
-	{ key: 'vegetariano', header: 'Vegetariano/a' },
-	{ key: 'vegano', header: 'Vegano/a' },
-	{ key: 'talla_camiseta', header: 'Talla camiseta' },
-	{ key: 'entrante', header: 'Entrante' },
-	{ key: 'principal', header: 'Principal' },
-	{ key: 'postre', header: 'Postre' },
-	{ key: 'recuerdo_favorito', header: 'Recuerdo favorito' },
-	{ key: 'deseo_futuro', header: 'Deseo para los próximos 10 años' }
-];
+const TRANSPORTE: Record<string, string> = {
+	vehiculo_propio: 'Vehículo propio',
+	bus: 'Bus desde TAIT'
+};
+const ENTRANTE: Record<string, string> = {
+	arroz_setas_jamon: 'Arroz de setas de temporada con jamón',
+	ensalada_langostinos: 'Ensalada de langostinos con frutos rojos y calabaza'
+};
+const PRINCIPAL: Record<string, string> = {
+	solomillo_ternera: 'Solomillo de ternera con demiglacé de patata encebollada',
+	colita_rape: 'Colita de rape con almejas en salsa verde'
+};
+const POSTRE: Record<string, string> = {
+	lemon_pie: 'Lemon pie',
+	coulant_chocolate: 'Coulant de chocolate con sorbete de mandarina'
+};
+const ENTREVISTA: Record<string, string> = { si: 'Sí', no: 'No' };
 
-function displayValue(key: keyof Rsvp, value: Rsvp[keyof Rsvp]): string {
-	if (value === null || value === undefined) return '';
-	if (key === 'transporte') return value === 'bus' ? 'Bus desde TAIT' : 'Vehículo propio';
-	if (key === 'tiene_restriccion_alimentaria' || key === 'vegetariano' || key === 'vegano') {
-		return value === true ? 'Sí' : 'No';
-	}
-	if (key === 'entrante') {
-		return value === 'arroz_setas_jamon'
-			? 'Arroz de setas de temporada con jamón'
-			: 'Ensalada de langostinos con frutos rojos y calabaza';
-	}
-	if (key === 'principal') {
-		return value === 'solomillo_ternera'
-			? 'Solomillo de ternera con demiglacé de patata encebollada'
-			: 'Colita de rape con almejas en salsa verde';
-	}
-	if (key === 'postre') {
-		return value === 'lemon_pie' ? 'Lemon pie' : 'Coulant de chocolate con sorbete de mandarina';
-	}
-	return String(value);
+// Lookups rather than ternaries, so an unexpected value shows up as itself
+// instead of silently rendering as the other option's label.
+function label(labels: Record<string, string>, value: string | null): string {
+	if (value === null) return '';
+	return labels[value] ?? value;
 }
+
+function yesNo(value: boolean): string {
+	return value ? 'Sí' : 'No';
+}
+
+// Sortable and parseable by Excel, in the timezone the event happens in.
+const DATE_FORMAT = new Intl.DateTimeFormat('sv-SE', {
+	timeZone: 'Europe/Madrid',
+	dateStyle: 'short',
+	timeStyle: 'short'
+});
+
+function fecha(value: string): string {
+	const date = new Date(value);
+	return Number.isNaN(date.getTime()) ? String(value) : DATE_FORMAT.format(date);
+}
+
+// Every cell is single-valued: nothing here joins a list into one cell, so the
+// sheet stays sortable and filterable. The photos are located by their ZIP
+// folder rather than listed file by file.
+const COLUMNS: { header: string; value: (r: Rsvp) => string }[] = [
+	{ header: 'ID', value: (r) => String(r.id) },
+	{ header: 'Fecha de inscripción', value: (r) => fecha(r.creado_en) },
+	{ header: 'Nombre y Apellido', value: (r) => r.nombre_completo },
+	{ header: 'Transporte', value: (r) => label(TRANSPORTE, r.transporte) },
+	{ header: 'Intolerancias/restricciones', value: (r) => yesNo(r.tiene_restriccion_alimentaria) },
+	{ header: 'Detalle intolerancias', value: (r) => r.detalle_restriccion_alimentaria ?? '' },
+	{ header: 'Vegetariano/a', value: (r) => yesNo(r.vegetariano) },
+	{ header: 'Vegano/a', value: (r) => yesNo(r.vegano) },
+	{ header: 'Talla camiseta', value: (r) => r.talla_camiseta },
+	{ header: 'Entrante', value: (r) => label(ENTRANTE, r.entrante) },
+	{ header: 'Principal', value: (r) => label(PRINCIPAL, r.principal) },
+	{ header: 'Postre', value: (r) => label(POSTRE, r.postre) },
+	{ header: 'Recuerdo favorito', value: (r) => r.recuerdo_favorito ?? '' },
+	{ header: 'Deseo para los próximos 10 años', value: (r) => r.deseo_futuro ?? '' },
+	{ header: 'Entrevista', value: (r) => label(ENTREVISTA, r.entrevista) },
+	{ header: 'Nº de fotos', value: (r) => String(r.fotos.length) },
+	{ header: 'Carpeta en el ZIP', value: (r) => (r.fotos.length > 0 ? rsvpFolder(r) : '') }
+];
 
 function toCsv(rows: Rsvp[]): string {
 	const records = rows.map((row) =>
-		Object.fromEntries(COLUMNS.map((c) => [c.header, displayValue(c.key, row[c.key])]))
+		Object.fromEntries(COLUMNS.map((c) => [c.header, c.value(row)]))
 	);
 	const body = stringify(records, {
 		header: true,
 		columns: COLUMNS.map((c) => c.header),
-		record_delimiter: '\r\n'
+		record_delimiter: '\r\n',
+		// Required: csv-stringify only quotes on the *configured* record delimiter,
+		// so a bare \n inside a field (the recuerdo/deseos textareas) would end the
+		// row early and corrupt the file. Quoting every string field prevents that.
+		quoted_string: true
 	});
 	// BOM so accented characters open correctly in Excel.
 	return '\uFEFF' + body;
 }
 
-function safeCompare(a: string, b: string): boolean {
-	const bufA = Buffer.from(a);
-	const bufB = Buffer.from(b);
-	if (bufA.length !== bufB.length) {
-		timingSafeEqual(bufA, bufA);
-		return false;
-	}
-	return timingSafeEqual(bufA, bufB);
-}
-
 export const POST: RequestHandler = async ({ request }) => {
-	const adminPassword = env.ADMIN_PASSWORD;
-	if (!adminPassword) {
-		throw error(500, 'ADMIN_PASSWORD no está configurada en el servidor.');
-	}
-
-	let password: unknown;
-	try {
-		const body = await request.json();
-		password = body?.password;
-	} catch {
-		throw error(400, 'Se esperaba un cuerpo JSON con el campo "password".');
-	}
-
-	if (typeof password !== 'string' || !safeCompare(password, adminPassword)) {
-		throw error(401, 'Contraseña incorrecta.');
-	}
+	await requireAdmin(request);
+	await ensureSchema();
 
 	const csv = toCsv(await getAllRsvps());
 	const timestamp = new Date().toISOString().replace(/[:.]/g, '-');

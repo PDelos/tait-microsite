@@ -7,7 +7,7 @@
 
 	<div id="closing_content" class="flex flex-col gap-16 text-center">
 		<p class="heading">¡Te esperamos!</p>
-		<p class="text-[2rem] text-primary lg:text-[1.125rem]">Muchas gracias</p>
+		<p class="subtitle">Muchas gracias</p>
 	</div>
 </section>
 

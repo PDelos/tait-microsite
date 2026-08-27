@@ -52,13 +52,13 @@
 	<title>Exportar inscripciones · TAIT</title>
 </svelte:head>
 
-<section id="export" class="items-center justify-center gap-12 px-10 text-center">
+<section id="export" class="bg-halo items-center justify-center gap-12 px-10 text-center">
 	<div class="flex flex-col gap-4">
 		<h1 class="heading">Exportar</h1>
 		<p class="subtitle">Panel de administración</p>
 	</div>
 
-	<div class="flex w-full max-w-md flex-col gap-3 text-left">
+	<div class="field w-full max-w-md text-left">
 		<label class="field-label" for="password">Contraseña</label>
 		<input
 			id="password"
@@ -73,12 +73,12 @@
 
 	<div class="flex flex-col items-center gap-3">
 		{#if errorMessage}
-			<p class="text-[1.75rem] text-red-600 lg:text-sm" role="alert">{errorMessage}</p>
+			<p class="text-note text-red-600" role="alert">{errorMessage}</p>
 		{/if}
 
 		<div class="flex flex-col items-center gap-6 lg:flex-row lg:gap-12">
 			<button
-				class="btn border-white bg-primary text-white disabled:cursor-not-allowed disabled:opacity-40"
+				class="btn btn-primary"
 				type="button"
 				disabled={!canSubmit}
 				onclick={() => download('csv', '/api/export', 'tait-rsvps.csv')}
@@ -87,7 +87,7 @@
 			</button>
 
 			<button
-				class="btn border-black disabled:cursor-not-allowed disabled:opacity-40"
+				class="btn border-black"
 				type="button"
 				disabled={!canSubmit}
 				onclick={() => download('fotos', '/api/export/images', 'tait-fotos.zip')}
@@ -97,9 +97,3 @@
 		</div>
 	</div>
 </section>
-
-<style>
-	#export {
-		background: radial-gradient(108% 108% at 50% -8%, #fff 68%, var(--color-primary) 100%), #fff;
-	}
-</style>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
+	import { reveal, HIDDEN, SHOWN } from '$lib/anim';
 
 	type Option = { value: string; label: string; sublabel?: string };
 
@@ -243,6 +244,29 @@
 	let submitting = $state(false);
 	let submitError = $state('');
 
+	// Only the first step is revealed: the later steps are swapped in by a button,
+	// not by scrolling, and they are already inside a section that has played.
+	let section: HTMLElement;
+
+	$effect(() =>
+		reveal(section, (tl) =>
+			tl
+				.fromTo('[data-reveal="form-title"]', HIDDEN, SHOWN)
+				.fromTo(
+					'[data-reveal="form-progress"]',
+					{ opacity: 1, scaleX: 0 },
+					{ scaleX: 1, transformOrigin: 'left center', duration: 0.9, ease: 'power2.inOut' },
+					'-=0.4'
+				)
+				.fromTo(
+					'[data-reveal-children="form-fields"] > *',
+					HIDDEN,
+					{ ...SHOWN, stagger: 0.12 },
+					'-=0.6'
+				)
+		)
+	);
+
 	const onSubmit: SubmitFunction = () => {
 		submitting = true;
 		submitError = '';
@@ -270,14 +294,14 @@
 	horizontal = false,
 	disabled = false
 )}
-	<div class="flex flex-col gap-3">
+	<div class="field">
 		{#if title}
 			<p class="field-label">{title}</p>
 		{/if}
 		<div class="flex gap-2 {horizontal ? 'flex-row' : 'flex-col'}">
 			{#each options as opt (opt.value)}
 				<label
-					class="flex flex-col rounded-full border px-4 py-2 text-[2rem] leading-snug transition-colors lg:text-[1rem]
+					class="pill flex-col items-stretch transition-colors
 						{selected === opt.value ? 'border-black' : 'border-transparent'}
 						{disabled ? 'pointer-events-none' : 'cursor-pointer'}"
 				>
@@ -294,7 +318,7 @@
 						{opt.label}
 					</span>
 					{#if opt.sublabel}
-						<span class="pl-6 text-[1.75rem] lg:text-sm">{opt.sublabel}</span>
+						<span class="pl-6 text-note">{opt.sublabel}</span>
 					{/if}
 				</label>
 			{/each}
@@ -303,9 +327,7 @@
 {/snippet}
 
 {#snippet chip(text: string, onRemove: () => void)}
-	<span
-		class="flex items-center gap-1.5 rounded-full border border-gray-300 px-3 py-1 text-[1.75rem] lg:text-sm"
-	>
+	<span class="pill w-fit gap-1.5 border-gray-300 px-3 py-1 text-note">
 		{text}
 		<button
 			type="button"
@@ -318,38 +340,25 @@
 	</span>
 {/snippet}
 
-{#snippet summaryField(title: string, value: string)}
-	<div class="flex flex-col gap-3">
+<!-- One title over one or more pills. `plain` renders the values as unselected
+ options (grey, no dot) instead of as the answer that was chosen. -->
+{#snippet summary(title: string, values: string[], plain = false)}
+	<div class="field">
 		<p class="field-label">{title}</p>
-		<div class="pill border-gray-300">{value}</div>
-	</div>
-{/snippet}
-
-{#snippet summaryChoice(title: string, value: string)}
-	<div class="flex flex-col gap-3">
-		<p class="field-label">{title}</p>
-		<div class="pill border-black">
-			<span class="size-2.5 rounded-full bg-black"></span>
-			{value}
-		</div>
-	</div>
-{/snippet}
-
-{#snippet summaryChips(title: string, tags: string[])}
-	<div class="flex flex-col gap-3">
-		<p class="field-label">{title}</p>
-		<div class="flex flex-wrap gap-2">
-			{#each tags as tag (tag)}
-				<span class="pill border-black">
-					<span class="size-2.5 rounded-full bg-black"></span>
-					{tag}
+		<div class="flex flex-wrap items-start gap-2">
+			{#each values as value (value)}
+				<span class="pill w-fit {plain ? 'border-gray-300' : 'border-black'}">
+					{#if !plain}
+						<span class="size-2.5 shrink-0 rounded-full bg-black"></span>
+					{/if}
+					{value}
 				</span>
 			{/each}
 		</div>
 	</div>
 {/snippet}
 
-<section id="form">
+<section id="form" bind:this={section}>
 	<form
 		method="POST"
 		action="?/submit"
@@ -360,10 +369,13 @@
 		<!-- Header and footer are shrink-0 and the step area scrolls between them,
 		 so the buttons keep their place no matter how tall a step gets. -->
 		<div class="flex w-full shrink-0 flex-col gap-12 text-center">
-			<h1 class="heading">{step < steps.length ? 'Nos gustaría saber...' : '¡Enviado!'}</h1>
+			<h1 data-reveal="form-title" class="heading">
+				{step < steps.length ? 'Nos gustaría saber...' : '¡Enviado!'}
+			</h1>
 			<div
 				id="progress_bar"
-				class="h-3 w-full"
+				data-reveal="form-progress"
+				class="h-3 w-full origin-left"
 				style="--step: {step}; --total-steps: {steps.length};"
 			></div>
 		</div>
@@ -373,12 +385,11 @@
 		<div class="min-h-0 w-full flex-1 overflow-x-hidden overflow-y-auto">
 			<div class="flex min-h-full w-full flex-col justify-center">
 				<div
-					class="{showColumnA || showColumnB
-						? 'flex'
-						: 'hidden'} w-full flex-col gap-10 px-10 lg:flex-row lg:gap-30 lg:px-40"
+					data-reveal-children="form-fields"
+					class="step {showColumnA || showColumnB ? 'flex' : 'hidden'}"
 				>
-					<div class="{showColumnA ? 'flex' : 'hidden'} w-full flex-col gap-8 text-left lg:flex-1">
-						<div class="flex flex-col gap-4">
+					<div class="step-col {showColumnA ? 'flex' : 'hidden'}">
+						<div class="field">
 							<p class="field-label">Nombre y Apellido</p>
 							<input
 								type="text"
@@ -426,7 +437,7 @@
 									bind:value={restriccionInput}
 									onkeydown={onRestriccionKeydown}
 									onblur={commitRestriccion}
-									class="input rounded-full py-2 text-[1.75rem] lg:text-sm"
+									class="input rounded-full py-2 text-note"
 								/>
 
 								{@render radioGroup(
@@ -451,9 +462,7 @@
 					</div>
 
 					<div
-						class="{showColumnB
-							? 'flex'
-							: 'hidden'} w-full flex-col gap-8 text-left transition-opacity lg:flex-1
+						class="step-col {showColumnB ? 'flex' : 'hidden'} transition-opacity
 					{foodDisabled ? 'pointer-events-none opacity-40' : ''}"
 					>
 						<p class="field-label">¿Qué te apetece almorzar?</p>
@@ -471,13 +480,9 @@
 					</div>
 				</div>
 
-				<div
-					class="{showMemoria
-						? 'flex'
-						: 'hidden'} w-full flex-col gap-10 px-10 lg:flex-row lg:gap-30 lg:px-40"
-				>
-					<div class="flex w-full flex-col gap-8 text-left lg:flex-1">
-						<div class="flex flex-col gap-3">
+				<div class="step {showMemoria ? 'flex' : 'hidden'}">
+					<div class="step-col">
+						<div class="field">
 							<p class="field-label">¿Cuál es tu recuerdo favorito en TAIT?</p>
 							<textarea
 								name="recuerdo"
@@ -487,10 +492,10 @@
 								class="input resize-none rounded-2xl py-3"></textarea>
 						</div>
 
-						<div class="flex flex-col gap-3">
+						<div class="field">
 							<p class="field-label">¿Quieres compartir alguna foto de la historia de TAIT?</p>
 							<label
-								class="flex h-56 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-300 text-[1.75rem] text-gray-400 lg:text-sm"
+								class="flex h-56 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-300 text-note text-gray-400"
 							>
 								<input
 									type="file"
@@ -516,8 +521,8 @@
 						</div>
 					</div>
 
-					<div class="flex w-full flex-col gap-8 text-left lg:flex-1">
-						<div class="flex flex-col gap-3">
+					<div class="step-col">
+						<div class="field">
 							<p class="field-label">¿Qué deseas para los futuros 10 años en TAIT?</p>
 							<textarea
 								name="deseos"
@@ -538,45 +543,40 @@
 				</div>
 
 				<div
-					class="{showSummary
+					class="step {showSummary
 						? 'flex'
-						: 'hidden'} mx-10 flex-col gap-10 self-stretch rounded-2xl border border-gray-200 px-10 py-8 lg:mx-0 lg:flex-row lg:gap-30 lg:px-40"
+						: 'hidden'} mx-10 self-stretch rounded-2xl border border-gray-200 py-8 lg:mx-0"
 				>
-					<div class="flex w-full flex-col gap-6 text-left lg:flex-1">
-						{@render summaryField('Nombre y Apellido', nombre)}
-						{@render summaryChoice('Voy a ir con:', labelFor(transporteOptions, transporte))}
-						{@render summaryChoice(
-							'Tengo intolerancias o restricciones alimentarias',
+					<div class="step-col gap-6">
+						{@render summary('Nombre y Apellido', [nombre], true)}
+						{@render summary('Voy a ir con:', [labelFor(transporteOptions, transporte)])}
+						{@render summary('Tengo intolerancias o restricciones alimentarias', [
 							labelFor(intoleranciasOptions, intolerancias)
-						)}
+						])}
 						{#if intolerancias === 'si'}
-							{@render summaryChips('Especifica intolerancias o restricciones alimentarias', [
+							{@render summary('Especifica intolerancias o restricciones alimentarias', [
 								...restricciones,
 								...(dietaEspecial ? [labelFor(dietaOptions, dietaEspecial)] : [])
 							])}
 						{/if}
-						{@render summaryChoice('Talla de camiseta', talla ?? '')}
+						{@render summary('Talla de camiseta', [talla ?? ''])}
 					</div>
 
 					<div
-						class="flex w-full flex-col gap-6 text-left transition-opacity lg:flex-1
+						class="step-col gap-6 transition-opacity
 					{foodDisabled ? 'opacity-40' : ''}"
 					>
 						<p class="field-label">¿Qué te apetece almorzar?</p>
 						{#each meals as meal (meal.id)}
-							{#if foodDisabled}
-								<!-- Special diet: show every option grayed out, nothing is selectable -->
-								<div class="flex flex-col gap-3">
-									<p class="field-label">{meal.label}</p>
-									<div class="flex flex-col items-start gap-2">
-										{#each meal.options as opt (opt.value)}
-											<div class="pill border-gray-300">{opt.label}</div>
-										{/each}
-									</div>
-								</div>
-							{:else}
-								{@render summaryChoice(meal.label, labelFor(meal.options, mealChoices[meal.id]))}
-							{/if}
+							<!-- With a special diet nothing was selectable, so every option is
+							 listed plain instead of one being marked as the choice. -->
+							{@render summary(
+								meal.label,
+								foodDisabled
+									? meal.options.map((o) => o.label)
+									: [labelFor(meal.options, mealChoices[meal.id])],
+								foodDisabled
+							)}
 						{/each}
 					</div>
 				</div>
@@ -585,7 +585,7 @@
 
 		<div class="flex w-full shrink-0 flex-col items-center gap-3">
 			{#if submitError}
-				<p class="text-[1.75rem] text-red-600 lg:text-sm">{submitError}</p>
+				<p class="text-note text-red-600">{submitError}</p>
 			{/if}
 			<div class="flex gap-12">
 				{#if step > 1 && step < steps.length}
@@ -594,20 +594,11 @@
 					</button>
 				{/if}
 				{#if step < steps.length - 1}
-					<button
-						class="btn border-white bg-primary text-white disabled:cursor-not-allowed disabled:opacity-40"
-						type="button"
-						onclick={next}
-						disabled={!stepValid}
-					>
+					<button class="btn btn-primary" type="button" onclick={next} disabled={!stepValid}>
 						Siguiente
 					</button>
 				{:else if step === steps.length - 1}
-					<button
-						class="btn border-white bg-primary text-white disabled:cursor-not-allowed disabled:opacity-40"
-						type="submit"
-						disabled={!stepValid || submitting}
-					>
+					<button class="btn btn-primary" type="submit" disabled={!stepValid || submitting}>
 						{submitting ? 'Enviando…' : 'Enviar'}
 					</button>
 				{/if}
@@ -617,26 +608,8 @@
 </section>
 
 <style>
-	/* .input now lives in src/routes/layout.css so /export can use it too. */
-
-	/* Summary pill: border color comes from a markup utility (border-black /
-	 * border-gray-300), so only width + style are set here. */
-	.pill {
-		display: flex;
-		width: fit-content;
-		align-items: center;
-		gap: 0.5rem;
-		border-width: 1px;
-		border-style: solid;
-		border-radius: 9999px;
-		padding: 0.5rem 1rem;
-		font-size: 2rem;
-		line-height: 1.3; /* the summary's meal names wrap; 100% would overlap */
-
-		@media (min-width: 1024px) {
-			font-size: 1rem;
-		}
-	}
+	/* Everything else this section used to define now lives in
+	 * src/routes/layout.css, shared with /export. */
 
 	@property --progress {
 		syntax: '<percentage>';

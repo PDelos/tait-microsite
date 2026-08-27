@@ -10,9 +10,30 @@
 	--color-primary: #0c4392;
 	--font-sans: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	--font-display: 'Vidaloka', serif;
+
+	/* Type scale. The root font-size is clamped to 8px on a phone and 16px at the
+	 * 1515px reference width, so every size needs a mobile and a desktop value —
+	 * they are defined once here (and overridden in @layer base below) instead of
+	 * being written out as a text-[2rem] lg:text-[1rem] pair at every call site.
+	 * Values below are the mobile ones, where 1rem = 8px. */
+	--text-note: 2rem; /* 16px — sublabels, chips, errors, secondary inputs */
+	--text-body: 2.25rem; /* 18px — controls and running text */
+	--text-lead: 2.25rem; /* 18px — body text under a .heading */
+	--text-label: 3rem; /* 24px — question / field labels */
 }
 
 @layer base {
+	/* Desktop half of the scale. Layer order is theme → base, so these win.
+	 * At the 1515px reference width 1rem = 16px. */
+	@media (min-width: 1024px) {
+		:root {
+			--text-note: 0.875rem; /* 14px */
+			--text-body: 1rem; /* 16px */
+			--text-lead: 1.125rem; /* 18px */
+			--text-label: 1.5rem; /* 24px */
+		}
+	}
+
 	html,
 	body {
 		height: 100%;
@@ -31,6 +52,26 @@
 	html::-webkit-scrollbar,
 	body::-webkit-scrollbar {
 		display: none;
+	}
+
+	/* Anything a section's GSAP timeline reveals starts hidden, so the
+	 * server-rendered HTML never flashes before the timeline takes over.
+	 * data-reveal hides the element itself; data-reveal-children hides its direct
+	 * children, for the lists that come in staggered. The attribute value is the
+	 * name the timeline selects on. The <noscript> block in src/app.html and the
+	 * reduced-motion rule below are the two ways back out. */
+	[data-reveal],
+	[data-reveal-children] > * {
+		opacity: 0;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		[data-reveal],
+		[data-reveal-children] > * {
+			opacity: 1 !important;
+			transform: none !important;
+			clip-path: none !important;
+		}
 	}
 
 	section {
@@ -53,6 +94,27 @@
 		color: var(--color-primary);
 	}
 
+	/* Body text under a .heading. */
+	.subtitle {
+		font-size: var(--text-lead);
+		color: var(--color-primary);
+	}
+
+	/* Question/field label. Sets its own line-height because the base layer puts
+	 * line-height:100% on body, which makes wrapped lines sit on top of each
+	 * other — very visible on the longer questions in the form. */
+	.field-label {
+		font-size: var(--text-label);
+		line-height: 1.3;
+	}
+
+	/* A label and its control. */
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
 	.btn {
 		font-family: var(--font-sans);
 		height: fit-content;
@@ -62,33 +124,38 @@
 		align-items: center;
 		border-radius: 3.125rem;
 		border: 1px solid;
-		font-size: 2rem;
+		font-size: var(--text-body);
 		gap: 0.5rem;
 
 		@media (min-width: 1024px) {
 			padding: 0.75rem 1.25rem;
-			font-size: 1rem;
+		}
+
+		&:disabled {
+			cursor: not-allowed;
+			opacity: 0.4;
 		}
 	}
 
-	/* Body text under a .heading (big on mobile, small on desktop) */
-	.subtitle {
-		@apply text-[2rem] text-primary lg:text-[1.125rem];
+	.btn-primary {
+		border-color: #fff;
+		background-color: var(--color-primary);
+		color: #fff;
 	}
 
-	/* Question/field label. Sets its own line-height because the base layer puts
-	 * line-height:100% on body, which makes wrapped lines sit on top of each
-	 * other — very visible on the longer questions in the form. */
-	/* Sized for mobile and scaled down at lg:, like .btn and .subtitle — the root
-	 * font-size is clamped to 8px on a phone and 16px on desktop, so a single rem
-	 * value would render at half size on mobile. */
-	.field-label {
-		font-size: 3rem;
-		line-height: 1.3;
-
-		@media (min-width: 1024px) {
-			font-size: 1.5rem;
-		}
+	/* Rounded bordered box: summary values, and the radio labels in the form.
+	 * Border color and width behaviour come from markup utilities (border-black /
+	 * border-gray-300 / w-fit), so this never fights them. */
+	.pill {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		border-width: 1px;
+		border-style: solid;
+		border-radius: 9999px;
+		padding: 0.5rem 1rem;
+		font-size: var(--text-body);
+		line-height: 1.3; /* values wrap; 100% would overlap */
 	}
 
 	/* Form-field base: radius and padding-block live in the markup
@@ -97,16 +164,44 @@
 		width: 100%;
 		border: 1px solid var(--color-gray-300);
 		padding-inline: 1rem;
-		font-size: 2rem;
+		font-size: var(--text-body);
 		line-height: 1.3; /* textarea content wraps; 100% would overlap */
-
-		@media (min-width: 1024px) {
-			font-size: 1rem;
-		}
 	}
 
 	.input:focus {
 		outline: none;
 		border-color: var(--color-primary);
+	}
+
+	/* One step of the form: two columns side by side on desktop, stacked on mobile.
+	 * The flex/hidden toggle stays in the markup — that is per-step state. */
+	.step {
+		width: 100%;
+		flex-direction: column;
+		gap: 2.5rem;
+		padding-inline: 2.5rem;
+
+		@media (min-width: 1024px) {
+			flex-direction: row;
+			gap: 7.5rem;
+			padding-inline: 10rem;
+		}
+	}
+
+	.step-col {
+		display: flex;
+		width: 100%;
+		flex-direction: column;
+		gap: 2rem;
+		text-align: left;
+
+		@media (min-width: 1024px) {
+			flex: 1 1 0%;
+		}
+	}
+
+	/* Shared by the closing section and the export page. */
+	.bg-halo {
+		background: radial-gradient(108% 108% at 50% -8%, #fff 68%, var(--color-primary) 100%), #fff;
 	}
 }

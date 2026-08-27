@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { reveal, HIDDEN, SHOWN } from '$lib/anim';
+
 	interface LogisticsCard {
 		title: string;
 		buttonLabel: string;
@@ -28,6 +30,21 @@
 			bg: '/gradient.png'
 		}
 	];
+
+	let section: HTMLElement;
+
+	$effect(() =>
+		reveal(section, (tl) =>
+			tl
+				.fromTo('[data-reveal-children="logistics-intro"] > *', HIDDEN, { ...SHOWN, stagger: 0.12 })
+				.fromTo(
+					'[data-reveal-children="logistics-cards"] > *',
+					{ opacity: 0, y: 40, scale: 0.97 },
+					{ opacity: 1, y: 0, scale: 1, duration: 0.8, stagger: 0.15 },
+					'-=0.4'
+				)
+		)
+	);
 </script>
 
 {#snippet logisticsCard(card: LogisticsCard)}
@@ -50,19 +67,19 @@
 
 		<div class="mt-2">
 			{#each card.lines as line}
-				<p class="text-[2rem] leading-relaxed opacity-80 lg:text-[1rem]">{line}</p>
+				<p class="text-body leading-relaxed opacity-80">{line}</p>
 			{/each}
 		</div>
 	</a>
 {/snippet}
 
-<section id="logistics" class="justify-center p-10">
-	<div class="mb-10 flex flex-col gap-8 pt-20">
+<section id="logistics" bind:this={section} class="justify-center p-10">
+	<div data-reveal-children="logistics-intro" class="mb-10 flex flex-col gap-8 pt-20">
 		<h2 class="heading">Logística</h2>
 		<p class="subtitle">El 29 de septiembre de 2026</p>
 	</div>
 
-	<div class="flex w-full flex-col gap-8 md:flex-row">
+	<div data-reveal-children="logistics-cards" class="flex w-full flex-col gap-8 md:flex-row">
 		{#each cards as card}
 			{@render logisticsCard(card)}
 		{/each}

@@ -1,30 +1,16 @@
-<section class="opening">
-	<div class="opening__hero">
-		<p class="opening__subtitle title">y a la reunión anual de la Compañía:</p>
+<section id="opening" class="items-center">
+	<div
+		id="opening_hero"
+		class="@container flex w-[90%] flex-1 items-center justify-center text-center lg:w-[70%]"
+	>
+		<p class="heading text-[12cqw] font-normal lg:text-[6rem]">
+			y a la reunión anual de la Compañía:
+		</p>
 	</div>
-	<footer class="opening__footer row">
-		<p class="opening__detail title">29-06-26</p>
-		<p class="opening__detail title">Hotel Qgat</p>
-		<p class="opening__detail title">11:00h</p>
+
+	<footer id="opening_footer" class="flex w-full items-center justify-between p-18">
+		<p class="heading text-[4rem] font-normal">29-06-26</p>
+		<p class="heading text-[4rem] font-normal">Hotel Qgat</p>
+		<p class="heading text-[4rem] font-normal">11:00h</p>
 	</footer>
 </section>
-
-<style>
-	.opening {
-		align-items: center;
-		/* display / flex-direction come from the shared `section` base */
-	}
-
-	.opening__hero {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		text-align: center;
-		flex: 1;
-		max-width: 57rem;
-	}
-
-	.opening__footer {
-		width: 100%;
-	}
-</style>

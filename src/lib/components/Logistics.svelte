@@ -1,57 +1,70 @@
-<section class="logistics">
-	<div class="logistics__header stack">
-		<h2 class="logistics__title title">Logística</h2>
-		<p class="logistics__date subtitle">El 29 de septiembre de 2026</p>
+<script lang="ts">
+	interface LogisticsCard {
+		title: string;
+		buttonLabel: string;
+		buttonIcon: string;
+		lines: string[];
+		href: string;
+		downloadName?: string;
+		bg: string;
+	}
+
+	const cards: LogisticsCard[] = [
+		{
+			title: 'Hotel Qgat',
+			buttonLabel: 'Ir',
+			buttonIcon: '/icons/arrow.svg',
+			lines: ['Dirección: Av. de la Via Augusta, 51', '08174 Sant Cugat del Vallès, Barcelona'],
+			href: 'https://www.google.com/maps/search/?api=1&query=Hotel+Qgat+Av.+de+la+Via+Augusta+51+Sant+Cugat+del+Valles',
+			bg: '/mapa_event.png'
+		},
+		{
+			title: 'Agenda',
+			buttonLabel: 'Descargar',
+			buttonIcon: '/icons/download.svg',
+			lines: ['Horario detallado', 'Descárgate todo lo que pasará en el aniversario'],
+			href: '/agenda.pdf',
+			downloadName: 'tait-2026-10-agenda.pdf',
+			bg: '/gradient.png'
+		}
+	];
+</script>
+
+{#snippet logisticsCard(card: LogisticsCard)}
+	<a
+		class="flex h-90 w-full flex-col justify-end rounded-3xl bg-cover bg-center p-6 text-white lg:h-88 lg:p-10"
+		style="background-image: url({card.bg});"
+		href={card.href}
+		download={card.downloadName}
+		target={card.downloadName ? undefined : '_blank'}
+		rel={card.downloadName ? undefined : 'noopener noreferrer'}
+	>
+		<div class="flex items-center justify-between gap-4">
+			<p class="text-[3rem] lg:text-[2rem]">{card.title}</p>
+
+			<span class="btn shrink-0 bg-white text-black">
+				{card.buttonLabel}
+				<img src={card.buttonIcon} alt="" class="ml-3 size-4" />
+			</span>
+		</div>
+
+		<div class="mt-2">
+			{#each card.lines as line}
+				<p class="text-[2rem] leading-relaxed opacity-80 lg:text-[1rem]">{line}</p>
+			{/each}
+		</div>
+	</a>
+{/snippet}
+
+<section id="logistics" class="justify-center p-10">
+	<div class="mb-10 flex flex-col gap-8 pt-20">
+		<h2 class="heading">Logística</h2>
+		<p class="text-[2rem] text-primary lg:text-[1.125rem]">El 29 de septiembre de 2026</p>
 	</div>
 
-	<div class="logistics__cards">
-		<div class="card card--map">
-			<div class="card__header row">
-				<p class="card__title">Hotel Qgat</p>
-				<button class="btn btn--sm">Ir <span>↗</span></button>
-			</div>
-			<p class="card__text">Dirección: Av. de la Via Augusta, 51</p>
-			<p class="card__text">08174 Sant Cugat del Vallès, Barcelona</p>
-		</div>
-
-		<div class="card card--agenda">
-			<div class="card__header row">
-				<p class="card__title">Agenda</p>
-				<button class="btn btn--sm">Descargar <span>⬇</span></button>
-			</div>
-			<p class="card__text">Horario detallado</p>
-			<p class="card__text">Descárgate todo lo que pasará en el aniversario</p>
-		</div>
+	<div class="flex w-full flex-col gap-8 md:flex-row">
+		{#each cards as card}
+			{@render logisticsCard(card)}
+		{/each}
 	</div>
 </section>
-
-<style>
-	.logistics {
-		align-items: center;
-		justify-content: center;
-		gap: 4rem;
-		padding: 6rem var(--gutter);
-	}
-
-	.logistics__header {
-		align-items: center;
-		gap: 1rem;
-		text-align: center;
-	}
-
-	.logistics__cards {
-		display: flex;
-		gap: 1.25rem;
-		width: 100%;
-	}
-
-	/* content-specific art direction for each card — the shared look
-	   (radius, shadow, padding, typography) lives in the global .card class */
-	.card--map {
-		background: linear-gradient(0deg, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.2)), #2e2e2e;
-	}
-
-	.card--agenda {
-		background: linear-gradient(180deg, var(--color-white) 35%, var(--color-main) 90%);
-	}
-</style>

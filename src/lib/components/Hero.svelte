@@ -1,141 +1,63 @@
 <script lang="ts">
-	import logo from '$lib/assets/logo_tait.svg';
+	import logo from '$lib/assets/logo_tait.jpg';
 </script>
 
-<section class="invite">
-	<div class="invite__hero">
-		<div class="invite__intro stack">
-			<p class="invite__subtitle subtitle">Es un placer invitarte a la celebración de los</p>
-			<div class="invite__title-wrap">
-				<h1 class="invite__title title">10 años TAIT</h1>
-			</div>
-		</div>
-		<div class="invite__actions">
-			<button class="btn">Ir al Formulario</button>
-			<button class="btn btn--secondary">Ver Horario</button>
-		</div>
-	</div>
-
-	<footer class="invite__footer row">
-		<img class="invite__logo" src={logo} alt="Tait España" />
-		<p class="invite__detail subtitle">29-06-26</p>
-		<p class="invite__detail subtitle">Hotel Qgat</p>
-		<p class="invite__detail subtitle">11:00h</p>
-	</footer>
-
-	<video autoplay loop muted playsinline poster="/hero_background_poster.webp">
+<section id="invite">
+	<video
+		id="invite_background"
+		class="absolute inset-0 z-0 h-full w-full object-cover"
+		autoplay
+		loop
+		muted
+		playsinline
+		poster="/hero_background_poster.webp"
+	>
 		<source src="/hero_background.mp4" type="video/mp4" />
 	</video>
+
+	<div id="invite_overlay" class="absolute inset-0 z-10"></div>
+
+	<div id="invite_content" class="relative z-20 flex flex-1 flex-col">
+		<div id="invite_hero" class="flex flex-1 flex-col items-center justify-center">
+			<div
+				id="invite_intro"
+				class="@container flex w-full flex-col gap-[2.38rem] text-center text-white"
+			>
+				<p class="text-[4cqw] leading-none tracking-[-0.15rem] lg:text-[2.5rem]">
+					Es un placer invitarte a la celebración de los
+				</p>
+				<h1
+					class="font-display text-[30cqw] leading-none tracking-[-1.3cqw] lg:text-[19cqw] lg:whitespace-nowrap @lg:tracking-[-0.9cqw]"
+				>
+					10 años <br class="lg:hidden" /> TAIT
+				</h1>
+			</div>
+			<div id="invite_actions" class="flex gap-5">
+				<a href="#form" class="btn border-[#D0D0D0] bg-white"> Ir al Formulario </a>
+
+				<a href="#agenda" class="btn border-[#6E6E6E] bg-[#2E2E2E78]"> Ver Horario </a>
+			</div>
+		</div>
+
+		<footer
+			id="invite_footer"
+			class="flex w-full items-center justify-between px-21 pb-2 text-[2rem] text-primary"
+		>
+			<img src={logo} class="h-24" alt="Tait España" />
+			<p>29·06·26</p>
+			<p>Hotel Qgat</p>
+			<p>11:00h</p>
+		</footer>
+	</div>
 </section>
 
 <style>
-	.invite {
-		position: relative;
-		min-height: 100svh;
-		overflow: hidden;
-		background: var(--color-black);
-		/* display / flex-direction come from the shared `section` base */
-	}
-
-	.invite > video {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		z-index: 0;
-	}
-
-	.invite::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		z-index: 1;
-		background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 78%, var(--color-white) 85%);
-	}
-
-	.invite__hero {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		gap: 4rem;
-		text-align: center;
-		color: var(--color-white);
-		position: relative;
-		z-index: 2;
-		width: 100%;
-	}
-
-	.invite__hero .subtitle,
-	.invite__hero .title {
-		color: var(--color-white);
-	}
-
-	.invite__intro {
-		align-items: center;
-		gap: 1rem;
-	}
-
-	.invite__actions {
-		display: flex;
-		gap: 1.25rem;
-	}
-
-	/* This section sits on a dark video background, so its buttons flip to a
-	   light-on-dark palette. Same .btn / .btn--secondary classes as the rest
-	   of the site — only the color variables change. */
-	.invite__hero .btn {
-		--btn-bg: var(--color-white);
-		--btn-color: #2e2e2e;
-		--btn-border: var(--color-border-light);
-		box-shadow: 0 4px 5px rgba(0, 0, 0, 0.05);
-	}
-
-	.invite__hero .btn--secondary {
-		--btn-bg: rgba(46, 46, 46, 0.47);
-		--btn-color: var(--color-white);
-		--btn-border: var(--color-border-soft);
-		backdrop-filter: blur(20px);
-		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-	}
-
-	/* container query context — width == the full hero width available to the title */
-	.invite__title-wrap {
-		container-type: inline-size;
-		container-name: title-wrap;
-		width: 100%;
-	}
-
-	.title {
-		margin: 0;
-		white-space: nowrap;
-		line-height: 1;
-		/* cqw = 1% of the container's inline (width) size.
-		   Tune this multiplier once for "10 años TAIT" in your font
-		   so it just touches both edges — then it holds at any screen size. */
-		font-size: 15cqw;
-	}
-
-	/* Optional: at very narrow containers, allow wrapping / smaller scale
-	   if 15cqw ever becomes too tall relative to viewport height */
-	@container title-wrap (max-width: 480px) {
-		.title {
-			font-size: 15cqw;
-		}
-	}
-
-	.invite__footer {
-		background-color: var(--color-white);
-		position: relative;
-		z-index: 2;
-		padding: 0.2rem 5.25rem;
-		flex-shrink: 0;
-	}
-
-	.invite__logo {
-		width: 6.25rem;
-		height: auto;
+	#invite_overlay {
+		background: linear-gradient(
+			180deg,
+			rgba(255, 255, 255, 0) calc(100% - 10rem),
+			#fff calc(100% - 6.7rem),
+			#fff 100%
+		);
 	}
 </style>

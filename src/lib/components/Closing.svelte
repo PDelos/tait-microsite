@@ -1,42 +1,18 @@
 <script lang="ts">
-	import logo from '$lib/assets/logo_tait.svg';
+	import logo from '$lib/assets/logo_tait.jpg';
 </script>
 
-<section class="closing">
-	<img class="closing__logo" src={logo} alt="Tait logo" />
+<section id="closing" class="items-center justify-center">
+	<img class="absolute top-8 right-8 h-36" src={logo} alt="Tait logo" />
 
-	<div class="closing__content stack">
-		<p class="closing__title title">¡Te esperamos!</p>
-		<p class="closing__subtitle subtitle">Muchas gracias</p>
+	<div id="closing_content" class="flex flex-col gap-16 text-center">
+		<p class="heading">¡Te esperamos!</p>
+		<p class="text-[2rem] text-primary lg:text-[1.125rem]">Muchas gracias</p>
 	</div>
-
-	<div class="closing__spacer" aria-hidden="true"></div>
 </section>
 
 <style>
-	.closing {
-		background:
-			radial-gradient(108% 108% at 51% 0%, var(--color-white) 68%, var(--color-main) 100%),
-			var(--color-white);
-		justify-content: space-between;
-		align-items: center;
-		padding: 3.5rem var(--gutter);
-		text-align: center;
-	}
-
-	.closing__logo {
-		align-self: flex-end;
-		width: 7rem;
-		height: auto;
-	}
-
-	.closing__content {
-		align-items: center;
-		gap: 1.5rem;
-	}
-
-	/* balances the logo above so the title/subtitle sit visually centered */
-	.closing__spacer {
-		height: 7rem;
+	#closing {
+		background: radial-gradient(108% 108% at 50% -8%, #fff 68%, var(--color-primary) 100%), #fff;
 	}
 </style>

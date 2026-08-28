@@ -369,7 +369,7 @@
 		<!-- Header and footer are shrink-0 and the step area scrolls between them,
 		 so the buttons keep their place no matter how tall a step gets. -->
 		<div class="flex w-full shrink-0 flex-col gap-12 text-center">
-			<h1 data-reveal="form-title" class="heading">
+			<h1 data-reveal="form-title" class="heading heading-gradient">
 				{step < steps.length ? 'Nos gustaría saber...' : '¡Enviado!'}
 			</h1>
 			<div

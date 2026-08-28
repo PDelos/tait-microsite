@@ -178,7 +178,12 @@
 		class="@container mx-auto mb-28 flex w-[80%] shrink-0 flex-col items-center justify-center gap-8 text-center lg:mt-auto lg:mb-18"
 	>
 		<p class="hidden text-lead text-primary lg:block">{tardeoTime}</p>
-		<p class="heading pb-20 text-[12cqw] leading-[1.05] font-normal lg:pb-10 lg:text-[4.5rem]">
+		<!-- mb-0 because this one carries its own pb-20/lg:pb-10: that utility wins over
+		 the padding-block in .heading-gradient, leaving its negative bottom margin
+		 with nothing to cancel and pulling the footer up by ~0.2em. -->
+		<p
+			class="heading heading-gradient mb-0 pb-20 text-[12cqw] leading-[1.05] font-normal lg:pb-10 lg:text-[4.5rem]"
+		>
 			Tardeo de aniversario con actuación y muchas sorpresas
 		</p>
 	</div>

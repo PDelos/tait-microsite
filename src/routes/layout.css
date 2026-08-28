@@ -94,6 +94,28 @@
 		color: var(--color-primary);
 	}
 
+	/* Section headings wash from the brand blue toward a pale tint of it, never all
+	 * the way to white. 270deg puts the light end on the right. Worn alongside
+	 * .heading, and it has to sit on the element that actually holds the text:
+	 * background is not inherited but -webkit-text-fill-color is, so putting this
+	 * on a wrapper would leave every child transparent with nothing painting
+	 * through. */
+	.heading-gradient {
+		background: linear-gradient(270deg, #b9ceed 0%, var(--color-primary) 100%);
+		background-clip: text;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+
+		/* .heading sets line-height:90%, so glyphs spill outside the element's box —
+		 * descenders (g, p, y) below it, accents above. background-clip:text only
+		 * paints inside the background box, so those parts come out blank and the
+		 * letters look sliced. The padding grows the paint area; the negative margin
+		 * takes the same amount back out of the layout, so nothing moves. em units
+		 * keep it proportional across the very different heading sizes. */
+		padding-block: 0.2em;
+		margin-block: -0.2em;
+	}
+
 	/* Body text under a .heading. */
 	.subtitle {
 		font-size: var(--text-lead);

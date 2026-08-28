@@ -75,7 +75,7 @@
 
 <section id="logistics" bind:this={section} class="justify-center p-10">
 	<div data-reveal-children="logistics-intro" class="mb-10 flex flex-col gap-8 pt-20">
-		<h2 class="heading">Logística</h2>
+		<h2 class="heading heading-gradient">Logística</h2>
 		<p class="subtitle">El 29 de septiembre de 2026</p>
 	</div>
 

@@ -26,7 +26,10 @@
 		id="opening_hero"
 		class="@container flex w-[90%] flex-1 items-center justify-center text-center lg:w-[70%]"
 	>
-		<p data-reveal="opening-title" class="heading text-[12cqw] font-normal lg:text-[6rem]">
+		<p
+			data-reveal="opening-title"
+			class="heading heading-gradient text-[12cqw] font-normal lg:text-[6rem]"
+		>
 			y a la reunión anual de la Compañía:
 		</p>
 	</div>

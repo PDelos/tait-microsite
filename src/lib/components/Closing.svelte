@@ -30,7 +30,7 @@
 		data-reveal-children="closing-content"
 		class="flex flex-col gap-16 text-center"
 	>
-		<p class="heading">¡Te esperamos!</p>
+		<p class="heading heading-gradient">¡Te esperamos!</p>
 		<p class="subtitle">Muchas gracias</p>
 	</div>
 </section>

@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
+	import { upload } from '@vercel/blob/client';
 	import { reveal, HIDDEN, SHOWN } from '$lib/anim';
+	import { downscale } from '$lib/images';
 
 	type Option = { value: string; label: string; sublabel?: string };
 
@@ -110,33 +112,51 @@
 
 	// --- Memoria step state ---
 	let recuerdo = $state('');
+	let proyecto = $state('');
 	let deseos = $state('');
-	let fotos = $state<File[]>([]);
 	let entrevista = $state<string | null>(null);
 
+	// Photos upload straight to Blob storage as they are picked, and only their pathnames
+	// travel with the form. Vercel caps a function's request body at 4.5 MB, which a
+	// single phone photo can exceed on its own, so they cannot ride along as file parts.
+	type Foto = { name: string; pathname: string; progress: number; failed: boolean };
+	let fotos = $state<Foto[]>([]);
+
 	const MAX_FOTOS = 10; // mirror of MAX_FILES in src/lib/server/blob.ts
+	const subiendoFotos = $derived(fotos.some((f) => !f.pathname && !f.failed));
 
-	// The chips are the source of truth; the file input is kept in sync via
-	// DataTransfer so the native form submission sends exactly the chosen files.
-	let fotoInput: HTMLInputElement | null = null;
-
-	function syncFotoInput() {
-		if (!fotoInput) return;
-		const dt = new DataTransfer();
-		for (const foto of fotos) dt.items.add(foto);
-		fotoInput.files = dt.files;
-	}
-
-	function addFotos(e: Event) {
+	async function addFotos(e: Event) {
 		const input = e.currentTarget as HTMLInputElement;
-		fotos = [...fotos, ...Array.from(input.files ?? [])].slice(0, MAX_FOTOS);
+		const chosen = Array.from(input.files ?? []).slice(0, MAX_FOTOS - fotos.length);
 		input.value = ''; // allow picking the same file again
-		syncFotoInput();
+
+		for (const file of chosen) {
+			fotos = [...fotos, { name: file.name, pathname: '', progress: 0, failed: false }];
+			// Read it back out: $state hands out a proxy, and only the proxy is reactive.
+			const foto = fotos[fotos.length - 1];
+
+			try {
+				const small = await downscale(file);
+				const { pathname } = await upload(`images/${crypto.randomUUID()}-${small.name}`, small, {
+					access: 'private',
+					handleUploadUrl: '/api/upload',
+					onUploadProgress: ({ percentage }) => (foto.progress = Math.round(percentage))
+				});
+				foto.pathname = pathname;
+			} catch {
+				foto.failed = true;
+			}
+		}
 	}
 
 	function removeFoto(i: number) {
+		// The blob stays behind; `bun run prune` collects anything no row references.
 		fotos = fotos.filter((_, idx) => idx !== i);
-		syncFotoInput();
+	}
+
+	function fotoLabel(foto: Foto) {
+		if (foto.failed) return `${foto.name} — no se ha podido subir`;
+		return foto.pathname ? foto.name : `${foto.name} — ${foto.progress}%`;
 	}
 
 	function commitRestriccion() {
@@ -159,8 +179,10 @@
 	}
 
 	// --- Steps ---
-	// Desktop: 'form' (columns A+B) → 'memoria' → 'resumen'
-	// Mobile:  'datos' → 'comida' → 'memoria' → 'resumen'
+	// Desktop: 'form' (columns A+B) → 'memoria' (columns A+B) → 'resumen'
+	// Mobile:  'datos' → 'comida' → 'recuerdos' → 'futuro' → 'resumen'
+	// Both two-column steps split in two on mobile, so no single phone screen
+	// has to hold more than three fields.
 	// With a special diet, the 'comida' step simply doesn't exist on mobile,
 	// so next/edit never need special-casing.
 	// Steps stay mounted (hidden with CSS, never unmounted) so every input
@@ -178,8 +200,8 @@
 	const steps = $derived(
 		isMobile
 			? foodDisabled
-				? ['datos', 'memoria', 'resumen']
-				: ['datos', 'comida', 'memoria', 'resumen']
+				? ['datos', 'recuerdos', 'futuro', 'resumen']
+				: ['datos', 'comida', 'recuerdos', 'futuro', 'resumen']
 			: ['form', 'memoria', 'resumen']
 	);
 
@@ -188,7 +210,8 @@
 
 	const showColumnA = $derived(currentStep === 'form' || currentStep === 'datos');
 	const showColumnB = $derived(currentStep === 'form' || currentStep === 'comida');
-	const showMemoria = $derived(currentStep === 'memoria');
+	const showMemoriaA = $derived(currentStep === 'memoria' || currentStep === 'recuerdos');
+	const showMemoriaB = $derived(currentStep === 'memoria' || currentStep === 'futuro');
 	const showSummary = $derived(currentStep === 'resumen');
 
 	// --- Validation ---
@@ -210,9 +233,10 @@
 			talla !== null
 	);
 	const comidaValid = $derived(foodDisabled || meals.every((m) => mealChoices[m.id] !== null));
-	const memoriaValid = $derived(
-		recuerdo.trim().length > 0 && deseos.trim().length > 0 && entrevista !== null
-	);
+	const recuerdosValid = $derived(recuerdo.trim().length > 0 && proyecto.trim().length > 0);
+	const futuroValid = $derived(deseos.trim().length > 0 && entrevista !== null);
+	// Desktop shows both halves as one step.
+	const memoriaValid = $derived(recuerdosValid && futuroValid);
 
 	const stepValid = $derived.by(() => {
 		switch (currentStep) {
@@ -224,6 +248,10 @@
 				return comidaValid;
 			case 'memoria':
 				return memoriaValid;
+			case 'recuerdos':
+				return recuerdosValid;
+			case 'futuro':
+				return futuroValid;
 			default:
 				return true; // resumen: nothing left to validate
 		}
@@ -267,7 +295,11 @@
 		)
 	);
 
-	const onSubmit: SubmitFunction = () => {
+	// Measured entirely in the browser, so a skewed device clock can't reject a real guest.
+	const renderedAt = Date.now();
+
+	const onSubmit: SubmitFunction = ({ formData }) => {
+		formData.set('elapsed', String(Date.now() - renderedAt));
 		submitting = true;
 		submitError = '';
 		return async ({ result }) => {
@@ -366,6 +398,15 @@
 		use:enhance={onSubmit}
 		class="flex h-full min-h-0 w-full flex-col justify-between gap-8 py-5"
 	>
+		<!-- Honeypot. No guest ever sees this, so anything filled in came from a script. -->
+		<input
+			type="text"
+			name="website"
+			tabindex="-1"
+			autocomplete="off"
+			aria-hidden="true"
+			class="absolute size-0 opacity-0"
+		/>
 		<!-- Header and footer are shrink-0 and the step area scrolls between them,
 		 so the buttons keep their place no matter how tall a step gets. -->
 		<div class="flex w-full shrink-0 flex-col gap-12 text-center">
@@ -480,32 +521,34 @@
 					</div>
 				</div>
 
-				<div class="step {showMemoria ? 'flex' : 'hidden'}">
-					<div class="step-col">
+				<div class="step {showMemoriaA || showMemoriaB ? 'flex' : 'hidden'}">
+					<div class="step-col {showMemoriaA ? 'flex' : 'hidden'}">
 						<div class="field">
-							<p class="field-label">¿Cuál es tu recuerdo favorito en TAIT?</p>
+							<p class="field-label">¿Cuál es tu recuerdo o anécdota preferida de TAIT?</p>
 							<textarea
 								name="recuerdo"
 								placeholder="Escribir aquí"
 								bind:value={recuerdo}
-								rows="6"
+								rows="4"
+								class="input resize-none rounded-2xl py-3"></textarea>
+						</div>
+
+						<div class="field">
+							<p class="field-label">¿De qué proyecto de TAIT estás más orgulloso/a?</p>
+							<textarea
+								name="proyecto"
+								placeholder="Escribir aquí"
+								bind:value={proyecto}
+								rows="4"
 								class="input resize-none rounded-2xl py-3"></textarea>
 						</div>
 
 						<div class="field">
 							<p class="field-label">¿Quieres compartir alguna foto de la historia de TAIT?</p>
 							<label
-								class="flex h-56 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-300 text-note text-gray-400"
+								class="flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-gray-300 text-note text-gray-400 lg:h-24"
 							>
-								<input
-									type="file"
-									name="fotos"
-									accept="image/*"
-									multiple
-									class="hidden"
-									bind:this={fotoInput}
-									onchange={addFotos}
-								/>
+								<input type="file" accept="image/*" multiple class="hidden" onchange={addFotos} />
 								<img src="/icons/upload.svg" alt="upload icon" class="h-5 w-5" />
 								<span>
 									{fotos.length > 0 ? `${fotos.length} foto(s) seleccionada(s)` : 'Select file'}
@@ -514,26 +557,29 @@
 							{#if fotos.length > 0}
 								<div class="flex flex-wrap gap-1.5">
 									{#each fotos as foto, i (foto.name + i)}
-										{@render chip(foto.name, () => removeFoto(i))}
+										{#if foto.pathname}
+											<input type="hidden" name="fotoPaths" value={foto.pathname} />
+										{/if}
+										{@render chip(fotoLabel(foto), () => removeFoto(i))}
 									{/each}
 								</div>
 							{/if}
 						</div>
 					</div>
 
-					<div class="step-col">
+					<div class="step-col {showMemoriaB ? 'flex' : 'hidden'}">
 						<div class="field">
 							<p class="field-label">¿Qué deseas para los futuros 10 años en TAIT?</p>
 							<textarea
 								name="deseos"
 								placeholder="Escribir aquí"
 								bind:value={deseos}
-								rows="6"
+								rows="4"
 								class="input resize-none rounded-2xl py-3"></textarea>
 						</div>
 
 						{@render radioGroup(
-							'El dia 14 de septiembre vamos a realizar unas breves entrevistas para el evento, ¿te gustaría participar?',
+							'El día 14 vamos a realizar unas breves entrevistas para el evento de aniversario de TAIT y nos encantaría que participaras.',
 							'entrevista',
 							entrevistaOptions,
 							entrevista,
@@ -598,8 +644,12 @@
 						Siguiente
 					</button>
 				{:else if step === steps.length - 1}
-					<button class="btn btn-primary" type="submit" disabled={!stepValid || submitting}>
-						{submitting ? 'Enviando…' : 'Enviar'}
+					<button
+						class="btn btn-primary"
+						type="submit"
+						disabled={!stepValid || submitting || subiendoFotos}
+					>
+						{submitting ? 'Enviando…' : subiendoFotos ? 'Subiendo fotos…' : 'Enviar'}
 					</button>
 				{/if}
 			</div>

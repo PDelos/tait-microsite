@@ -33,6 +33,13 @@ function yesNo(value: boolean): string {
 	return value ? 'Sí' : 'No';
 }
 
+// Excel runs a cell that starts with = + - or @, so a guest could put a formula in a
+// free-text answer and have it execute when the sheet is opened. The leading apostrophe
+// makes Excel treat the cell as text; it is not shown in the cell itself.
+function safe(value: string): string {
+	return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+}
+
 // Sortable and parseable by Excel, in the timezone the event happens in.
 const DATE_FORMAT = new Intl.DateTimeFormat('sv-SE', {
 	timeZone: 'Europe/Madrid',
@@ -62,6 +69,10 @@ const COLUMNS: { header: string; value: (r: Rsvp) => string }[] = [
 	{ header: 'Principal', value: (r) => label(PRINCIPAL, r.principal) },
 	{ header: 'Postre', value: (r) => label(POSTRE, r.postre) },
 	{ header: 'Recuerdo favorito', value: (r) => r.recuerdo_favorito ?? '' },
+	{
+		header: 'Proyecto del que está más orgulloso/a',
+		value: (r) => r.proyecto_orgullo ?? ''
+	},
 	{ header: 'Deseo para los próximos 10 años', value: (r) => r.deseo_futuro ?? '' },
 	{ header: 'Entrevista', value: (r) => label(ENTREVISTA, r.entrevista) },
 	{ header: 'Nº de fotos', value: (r) => String(r.fotos.length) },
@@ -70,7 +81,7 @@ const COLUMNS: { header: string; value: (r: Rsvp) => string }[] = [
 
 function toCsv(rows: Rsvp[]): string {
 	const records = rows.map((row) =>
-		Object.fromEntries(COLUMNS.map((c) => [c.header, c.value(row)]))
+		Object.fromEntries(COLUMNS.map((c) => [c.header, safe(c.value(row))]))
 	);
 	const body = stringify(records, {
 		header: true,

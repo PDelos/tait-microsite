@@ -1,12 +1,15 @@
 import { fail, type Actions } from '@sveltejs/kit';
+import { head } from '@vercel/blob';
 import type { NewRsvp } from '$lib/server/db';
-import { deleteImage, uploadImages, validateImageFiles } from '$lib/server/blob';
+import { deleteImage, isImagePathname, MAX_FILES } from '$lib/server/blob';
 
 // Note: $lib/server/db is imported dynamically inside the action because it
 // throws at import time when DATABASE_URL is missing — deferring the import
 // keeps the page itself loadable and lets us return a proper form error.
 // $lib/server/blob has no such side effect, so it is imported normally, which
 // also keeps deleteImage in scope for the cleanup path below.
+
+const INVALID = 'Faltan campos obligatorios.';
 
 function str(data: FormData, key: string): string {
 	return String(data.get(key) ?? '').trim();
@@ -15,6 +18,13 @@ function str(data: FormData, key: string): string {
 export const actions: Actions = {
 	submit: async ({ request }) => {
 		const data = await request.formData();
+
+		// `website` is invisible to a real guest, and `elapsed` is how long the form was
+		// open before submitting, so either one only ever trips a script. Deliberately the
+		// same generic error as everything else, so a bot learns nothing from it.
+		if (str(data, 'website') || Number(str(data, 'elapsed')) < 5_000) {
+			return fail(400, { error: INVALID });
+		}
 
 		const tieneRestriccion = str(data, 'intolerancias') === 'si';
 		// The special-diet radios only exist under "sí" in the UI; enforce that
@@ -34,41 +44,39 @@ export const actions: Actions = {
 			'intolerancias',
 			'talla',
 			'recuerdo',
+			'proyecto',
 			'deseos',
 			'entrevista'
 		];
 		if (required.some((key) => !str(data, key))) {
-			return fail(400, { error: 'Faltan campos obligatorios.' });
+			return fail(400, { error: INVALID });
 		}
 		// Saying "sí" to restrictions means saying which — either a free-text
 		// restriction or a vegetariano/vegano choice counts.
 		if (tieneRestriccion && restricciones.length === 0 && !dieta) {
-			return fail(400, { error: 'Faltan campos obligatorios.' });
+			return fail(400, { error: INVALID });
 		}
 		// Vegans/vegetarians get a special menu, so they choose no courses.
 		if (!dieta && (!str(data, 'entrante') || !str(data, 'principal') || !str(data, 'postre'))) {
-			return fail(400, { error: 'Faltan campos obligatorios.' });
+			return fail(400, { error: INVALID });
 		}
 
-		// An untouched file input submits one empty File — drop those.
-		const fotos = data.getAll('fotos').filter((f): f is File => f instanceof File && f.size > 0);
-
-		if (fotos.length > 0) {
-			const invalid = validateImageFiles(fotos);
-			if (invalid) return fail(400, { error: invalid });
+		// The browser uploads photos straight to Blob storage, so only their pathnames
+		// arrive here. The shape check stops a crafted POST attaching some other path to a
+		// row, and head() proves each blob really exists before it is referenced.
+		const pathnames = data.getAll('fotoPaths').map(String).filter(Boolean);
+		if (pathnames.length > MAX_FILES || !pathnames.every(isImagePathname)) {
+			return fail(400, { error: 'Fotos no válidas.' });
 		}
-
-		// Uploaded first so their pathnames can go into the row; if the insert then
-		// fails they are deleted again, so a failed submission leaves no orphans.
-		let pathnames: string[] = [];
+		try {
+			await Promise.all(pathnames.map((pathname) => head(pathname)));
+		} catch {
+			return fail(400, { error: 'Alguna foto ya no está disponible. Vuelve a subirla.' });
+		}
 
 		try {
 			const { ensureSchema, insertRsvp } = await import('$lib/server/db');
 			await ensureSchema();
-
-			if (fotos.length > 0) {
-				pathnames = (await uploadImages(fotos)).map((blob) => blob.pathname);
-			}
 
 			// Values for enum columns match the table's CHECK constraints,
 			// which reject anything unexpected.
@@ -84,6 +92,7 @@ export const actions: Actions = {
 				principal: (str(data, 'principal') || null) as NewRsvp['principal'],
 				postre: (str(data, 'postre') || null) as NewRsvp['postre'],
 				recuerdo_favorito: str(data, 'recuerdo'),
+				proyecto_orgullo: str(data, 'proyecto'),
 				deseo_futuro: str(data, 'deseos'),
 				entrevista: str(data, 'entrevista') as NewRsvp['entrevista'],
 				fotos: pathnames
@@ -92,6 +101,7 @@ export const actions: Actions = {
 			await insertRsvp(rsvp);
 		} catch (e) {
 			console.error('RSVP submission failed:', e);
+			// The photos are already in the store, so a failed insert would strand them.
 			await Promise.all(
 				pathnames.map((pathname) =>
 					deleteImage(pathname).catch((err) =>

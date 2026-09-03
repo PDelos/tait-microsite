@@ -27,6 +27,7 @@ export async function createSchema(sql: Sql): Promise<void> {
       principal                       TEXT CHECK (principal IN ('solomillo_ternera', 'colita_rape')),
       postre                          TEXT CHECK (postre IN ('lemon_pie', 'coulant_chocolate')),
       recuerdo_favorito               TEXT,
+      proyecto_orgullo                TEXT,
       deseo_futuro                    TEXT,
       entrevista                      TEXT CHECK (entrevista IN ('si', 'no')),
       -- Vercel Blob pathnames, e.g. images/<uuid>-foto.jpg. Empty when no photos.

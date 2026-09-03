@@ -1,40 +1,40 @@
-import { put, list, get, del } from '@vercel/blob';
-import { randomUUID } from 'crypto';
+import { list, get, del } from '@vercel/blob';
 
 export const IMAGE_PREFIX = 'images/';
 export const MAX_FILES = 10;
 
-/** Validate a batch of files before upload: image-only, within max count. */
-export function validateImageFiles(files: File[]): string | null {
-	if (!files.length || files.every((f) => f.size === 0)) {
-		return 'No se ha seleccionado ninguna foto.';
-	}
-	if (files.length > MAX_FILES) {
-		return `Solo puedes subir hasta ${MAX_FILES} fotos.`;
-	}
-	for (const file of files) {
-		if (!file.type.startsWith('image/')) {
-			return `«${file.name}» no es una imagen.`;
-		}
-	}
-	return null;
+/**
+ * Per-photo ceiling, enforced by Vercel Blob itself via the client token
+ * (src/routes/api/upload). Photos are downscaled in the browser first
+ * (src/lib/images.ts), so this is generous in practice; it also keeps every blob under
+ * the 4.5 MB response limit that the admin photo download streams through.
+ */
+export const MAX_BYTES = 4 * 1024 * 1024;
+
+/** Also enforced by Blob against the real upload, not the browser-declared type. */
+export const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+
+// The only shape the form may write to or submit: images/<uuid>-<filename>. Disallowing
+// slashes in the filename half is what stops a crafted path escaping the prefix.
+const IMAGE_PATHNAME =
+	/^images\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-[^/\\]+$/i;
+
+export function isImagePathname(pathname: string): boolean {
+	return IMAGE_PATHNAME.test(pathname);
 }
 
-/** Upload a batch of validated image files, prefixed under images/. */
-export async function uploadImages(files: File[]) {
-	return Promise.all(
-		files.map((file) =>
-			put(`${IMAGE_PREFIX}${randomUUID()}-${file.name}`, file, {
-				access: 'private'
-			})
-		)
-	);
-}
-
-/** List all stored images. */
+/** List every stored image, a page at a time. */
 export async function listImages() {
-	const { blobs } = await list({ prefix: IMAGE_PREFIX });
-	return blobs;
+	const all = [];
+	let cursor: string | undefined;
+
+	do {
+		const page = await list({ prefix: IMAGE_PREFIX, cursor });
+		all.push(...page.blobs);
+		cursor = page.hasMore ? page.cursor : undefined;
+	} while (cursor);
+
+	return all;
 }
 
 /** Fetch a single image's stream + metadata by pathname. */

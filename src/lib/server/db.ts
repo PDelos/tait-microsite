@@ -40,6 +40,7 @@ export interface Rsvp {
 	principal: 'solomillo_ternera' | 'colita_rape' | null;
 	postre: 'lemon_pie' | 'coulant_chocolate' | null;
 	recuerdo_favorito: string | null;
+	proyecto_orgullo: string | null;
 	deseo_futuro: string | null;
 	entrevista: 'si' | 'no' | null;
 	/** Vercel Blob pathnames of the photos this person uploaded. */
@@ -54,13 +55,14 @@ export async function insertRsvp(input: NewRsvp): Promise<number> {
       nombre_completo, transporte,
       tiene_restriccion_alimentaria, detalle_restriccion_alimentaria, vegetariano, vegano,
       talla_camiseta, entrante, principal, postre,
-      recuerdo_favorito, deseo_futuro, entrevista, fotos
+      recuerdo_favorito, proyecto_orgullo, deseo_futuro, entrevista, fotos
     ) VALUES (
       ${input.nombre_completo}, ${input.transporte},
       ${input.tiene_restriccion_alimentaria}, ${input.detalle_restriccion_alimentaria},
       ${input.vegetariano}, ${input.vegano},
       ${input.talla_camiseta}, ${input.entrante}, ${input.principal}, ${input.postre},
-      ${input.recuerdo_favorito}, ${input.deseo_futuro}, ${input.entrevista},
+      ${input.recuerdo_favorito}, ${input.proyecto_orgullo}, ${input.deseo_futuro},
+      ${input.entrevista},
       ${input.fotos}::text[]
     )
     RETURNING id

@@ -241,21 +241,28 @@
 /* ---------------------------------------------------------------------------
  * Palette lock.
  *
- * The site has exactly one colour scheme — white ground, #000 text, blue
- * --color-primary — and none of it may come from the browser. `color-scheme:
- * only light` in the base layer is the correct opt-out and handles Safari and
- * Chrome, but it is not sufficient on its own: in-app browsers (WhatsApp,
- * Instagram, Gmail, LinkedIn all use their own webview) and some Android OEM
- * builds re-theme a page regardless, and what they key off is
- * prefers-color-scheme rather than the page's declared scheme.
+ * The site has exactly one palette — white ground, #000 text, #0c4392 blue —
+ * and it renders identically whatever the visitor's OS or browser is set to.
+ * There is deliberately no prefers-color-scheme branch anywhere in this file:
+ * a dark-mode branch that restates the light values can only ever cover a
+ * subset of the styling, and it silently overrides colours that individual
+ * elements set for themselves. Every colour below is fixed, in both schemes.
  *
- * So the light values are restated below, explicitly, inside the dark query.
+ * `color-scheme: only light` in the base layer is the correct opt-out and
+ * handles Safari and Chrome, but it is not sufficient on its own: in-app
+ * browsers (WhatsApp, Instagram, Gmail and LinkedIn all use their own webview)
+ * and some Android OEM builds re-theme a page regardless. Hence this block.
+ *
  * These rules are deliberately OUTSIDE @layer: unlayered styles outrank every
  * layer, so nothing Tailwind emits — and nothing a webview injects into a
- * layer — can take them. Literal hex is used rather than var(): if a custom
- * property ever fails to resolve, var() falls back to the inherited value,
- * which under a forced dark scheme is the browser's white-on-black. A literal
- * cannot fail that way.
+ * layer — can take them. That cuts both ways: a Tailwind colour utility in the
+ * markup cannot override a locked selector either, so an element that needs a
+ * different colour has to hardcode it somewhere unlayered that outranks this,
+ * the way #agenda's white heading does in Agenda.svelte.
+ *
+ * Literal hex is used rather than var(): if a custom property ever fails to
+ * resolve, var() falls back to the inherited value, which under a forced dark
+ * scheme is the browser's white-on-black. A literal cannot fail that way.
  *
  * Section backgrounds set in component <style> blocks (#agenda's blue-to-white
  * fade, #invite_overlay's) are unlayered ID selectors, so they still win on
@@ -271,30 +278,26 @@ section {
 	background-color: #fff;
 }
 
-@media (prefers-color-scheme: dark) {
-	html,
-	body {
-		background-color: #fff;
-		color: #000;
-	}
+.heading,
+.subtitle {
+	color: #0c4392;
+}
 
-	section {
-		background-color: #fff;
-	}
+/* The gradient headings paint through the text rather than through `color`, so
+ * they need their own two declarations restated here. */
+.heading-gradient {
+	background-image: linear-gradient(270deg, #b9ceed 0%, #0c4392 100%);
+	-webkit-text-fill-color: transparent;
+}
 
-	.heading,
-	.subtitle {
-		color: var(--color-primary);
-	}
+.input {
+	background-color: #fff;
+	color: #000;
+	border-color: var(--color-gray-300);
+}
 
-	.input {
-		background-color: #fff;
-		color: #000;
-		border-color: var(--color-gray-300);
-	}
-
-	.btn-primary {
-		background-color: var(--color-primary);
-		color: #fff;
-	}
+.btn-primary {
+	border-color: #fff;
+	background-color: #0c4392;
+	color: #fff;
 }

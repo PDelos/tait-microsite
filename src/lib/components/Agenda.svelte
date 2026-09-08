@@ -92,7 +92,7 @@
 </script>
 
 <section id="agenda" bind:this={section} class="@container items-center">
-	<h2 data-reveal="agenda-title" class="heading shrink-0 pt-14 text-center text-white">Agenda</h2>
+	<h2 data-reveal="agenda-title" class="heading shrink-0 pt-14 text-center">Agenda</h2>
 
 	<!-- Mobile: vertical timeline, line down the left, text left-justified. -->
 	<!-- Height is set rather than flex-1: filling all the leftover space pushed the
@@ -211,6 +211,14 @@
 			var(--color-primary) var(--fade-start),
 			#fff var(--fade-end)
 		);
+	}
+
+	/* The heading sits on the blue band at the top of the fade, so it is white
+	 * rather than the site's blue. It has to be hardcoded here and not with a
+	 * text-white utility: the palette lock in layout.css is unlayered, so it
+	 * outranks every Tailwind utility. An ID selector outranks the lock. */
+	#agenda h2 {
+		color: #fff;
 	}
 
 	@media (min-width: 1024px) {

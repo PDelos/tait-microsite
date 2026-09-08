@@ -43,7 +43,7 @@
 	html,
 	body {
 		height: 100%;
-		color-scheme: light;
+		color-scheme: only light;
 		background-color: #fff;
 		font-family: var(--font-sans);
 		font-size: clamp(8px, 1.057vw, 18px);
@@ -235,5 +235,66 @@
 	/* Shared by the closing section and the export page. */
 	.bg-halo {
 		background: radial-gradient(108% 108% at 50% -8%, #fff 68%, var(--color-primary) 100%), #fff;
+	}
+}
+
+/* ---------------------------------------------------------------------------
+ * Palette lock.
+ *
+ * The site has exactly one colour scheme — white ground, #000 text, blue
+ * --color-primary — and none of it may come from the browser. `color-scheme:
+ * only light` in the base layer is the correct opt-out and handles Safari and
+ * Chrome, but it is not sufficient on its own: in-app browsers (WhatsApp,
+ * Instagram, Gmail, LinkedIn all use their own webview) and some Android OEM
+ * builds re-theme a page regardless, and what they key off is
+ * prefers-color-scheme rather than the page's declared scheme.
+ *
+ * So the light values are restated below, explicitly, inside the dark query.
+ * These rules are deliberately OUTSIDE @layer: unlayered styles outrank every
+ * layer, so nothing Tailwind emits — and nothing a webview injects into a
+ * layer — can take them. Literal hex is used rather than var(): if a custom
+ * property ever fails to resolve, var() falls back to the inherited value,
+ * which under a forced dark scheme is the browser's white-on-black. A literal
+ * cannot fail that way.
+ *
+ * Section backgrounds set in component <style> blocks (#agenda's blue-to-white
+ * fade, #invite_overlay's) are unlayered ID selectors, so they still win on
+ * specificity and keep painting normally.
+ * ------------------------------------------------------------------------- */
+html,
+body {
+	background-color: #fff;
+	color: #000;
+}
+
+section {
+	background-color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+	html,
+	body {
+		background-color: #fff;
+		color: #000;
+	}
+
+	section {
+		background-color: #fff;
+	}
+
+	.heading,
+	.subtitle {
+		color: var(--color-primary);
+	}
+
+	.input {
+		background-color: #fff;
+		color: #000;
+		border-color: var(--color-gray-300);
+	}
+
+	.btn-primary {
+		background-color: var(--color-primary);
+		color: #fff;
 	}
 }

@@ -7,9 +7,9 @@
 	}
 
 	const items: AgendaItem[] = [
-		{ time: '10:30-11:00h', label: 'Bienvenida' },
-		{ time: '11:00-13:00h', label: 'Reunión Anual' },
-		{ time: '13:15-14:30h', label: 'Almuerzo de Aniversario' },
+		{ time: '11:00-11:30h', label: 'Bienvenida' },
+		{ time: '11:30-13:30h', label: 'Reunión Anual' },
+		{ time: '13:30-14:30h', label: 'Almuerzo de Aniversario' },
 		{ time: '14:45-15:45h', label: 'Reto sorpresa' },
 		{ time: '16:00-16:30h', label: '10 años juntos y un futuro brillante' }
 	];

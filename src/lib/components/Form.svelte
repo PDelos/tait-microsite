@@ -13,7 +13,7 @@
 		{
 			value: 'bus',
 			label: 'Iré y volveré en bus des de TAIT',
-			sublabel: 'Recogida en TAIT 10:00h - Vuelta a TAIT a las 18:30h'
+			sublabel: 'Recogida en TAIT 10:30h - Vuelta a TAIT a las 18:30h'
 		}
 	];
 	const intoleranciasOptions: Option[] = [

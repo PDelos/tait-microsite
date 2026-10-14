@@ -1,17 +1,19 @@
 <script lang="ts">
-	import Hero from '$lib/components/Hero.svelte';
-	import Opening from '$lib/components/Opening.svelte';
-	import Form from '$lib/components/Form.svelte';
-	import Agenda from '$lib/components/Agenda.svelte';
-	import Logistics from '$lib/components/Logistics.svelte';
-	import Closing from '$lib/components/Closing.svelte';
+	import EncuestaHero from '$lib/components/encuesta/EncuestaHero.svelte';
+	import EncuestaIntro from '$lib/components/encuesta/EncuestaIntro.svelte';
+	import EncuestaForm from '$lib/components/encuesta/EncuestaForm.svelte';
+	import EncuestaClosing from '$lib/components/encuesta/EncuestaClosing.svelte';
 </script>
 
+<!-- The invitation and RSVP form that used to live here are at /evento. -->
+
+<svelte:head>
+	<title>Encuesta · 10 años TAIT</title>
+</svelte:head>
+
 <main>
-	<Hero />
-	<Opening />
-	<Form />
-	<Agenda />
-	<Logistics />
-	<Closing />
+	<EncuestaHero />
+	<EncuestaIntro />
+	<EncuestaForm />
+	<EncuestaClosing />
 </main>

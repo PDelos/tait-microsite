@@ -7,7 +7,8 @@
 
 import { neon } from '@neondatabase/serverless';
 import { env } from '$env/dynamic/private';
-import { createSchema } from './schema';
+import { createEncuestaSchema, createSchema } from './schema';
+import type { Aspecto } from '$lib/encuesta';
 
 const DATABASE_URL = env.DATABASE_URL;
 
@@ -77,4 +78,45 @@ export async function getAllRsvps(): Promise<Rsvp[]> {
 export async function getRsvpCount(): Promise<number> {
 	const rows = await sql`SELECT COUNT(*)::int AS count FROM rsvps`;
 	return rows[0].count as number;
+}
+
+// --- Encuesta (post-event survey) ---------------------------------------------
+
+let encuestaReady: Promise<void> | null = null;
+
+export function ensureEncuestaSchema(): Promise<void> {
+	// Reset on failure, so one cold-start hiccup doesn't poison the warm instance.
+	encuestaReady ??= createEncuestaSchema(sql).catch((e) => {
+		encuestaReady = null;
+		throw e;
+	});
+	return encuestaReady;
+}
+
+export interface Encuesta {
+	id: number;
+	creado_en: string;
+	lo_mejor: Aspecto;
+	lo_mejor_otro: string | null;
+	a_mejorar: Aspecto;
+	a_mejorar_otro: string | null;
+	valoracion: number;
+	comentario: string;
+}
+
+export type NewEncuesta = Omit<Encuesta, 'id' | 'creado_en'>;
+
+export async function insertEncuesta(input: NewEncuesta): Promise<void> {
+	await sql`
+    INSERT INTO encuesta (lo_mejor, lo_mejor_otro, a_mejorar, a_mejorar_otro, valoracion, comentario)
+    VALUES (
+      ${input.lo_mejor}, ${input.lo_mejor_otro},
+      ${input.a_mejorar}, ${input.a_mejorar_otro},
+      ${input.valoracion}, ${input.comentario}
+    )
+  `;
+}
+
+export async function getAllEncuestas(): Promise<Encuesta[]> {
+	return (await sql`SELECT * FROM encuesta ORDER BY id ASC`) as Encuesta[];
 }

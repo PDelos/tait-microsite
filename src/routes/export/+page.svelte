@@ -1,7 +1,7 @@
 <script lang="ts">
 	import JSZip from 'jszip';
 
-	type Job = 'csv' | 'fotos';
+	type Job = 'csv' | 'fotos' | 'encuesta';
 
 	let password = $state('');
 	let running = $state<Job | null>(null);
@@ -44,16 +44,18 @@
 
 	const stamp = () => new Date().toISOString().replace(/[:.]/g, '-');
 
-	async function downloadCsv() {
+	// The RSVP and survey CSVs are the same request against different endpoints.
+	async function downloadCsv(job: 'csv' | 'encuesta' = 'csv') {
 		errorMessage = '';
-		running = 'csv';
+		running = job;
 
 		try {
-			const response = await request('/api/export');
+			const response = await request(job === 'csv' ? '/api/export' : '/api/export/encuesta');
 			if (!response) return;
 
 			const disposition = response.headers.get('Content-Disposition') ?? '';
-			const filename = disposition.match(/filename="?([^"]+)"?/)?.[1] ?? 'tait-rsvps.csv';
+			const fallback = job === 'csv' ? 'tait-rsvps.csv' : 'tait-encuesta.csv';
+			const filename = disposition.match(/filename="?([^"]+)"?/)?.[1] ?? fallback;
 			save(await response.blob(), filename);
 		} catch {
 			errorMessage = 'Algo ha ido mal. Inténtalo de nuevo.';
@@ -92,7 +94,7 @@
 </script>
 
 <svelte:head>
-	<title>Exportar inscripciones · TAIT</title>
+	<title>Exportar · TAIT</title>
 </svelte:head>
 
 <section id="export" class="bg-halo items-center justify-center gap-12 px-10 text-center">
@@ -120,8 +122,22 @@
 		{/if}
 
 		<div class="flex flex-col items-center gap-6 lg:flex-row lg:gap-12">
-			<button class="btn btn-primary" type="button" disabled={!canSubmit} onclick={downloadCsv}>
-				{running === 'csv' ? 'Exportando…' : 'Descargar CSV'}
+			<button
+				class="btn btn-primary"
+				type="button"
+				disabled={!canSubmit}
+				onclick={() => downloadCsv('encuesta')}
+			>
+				{running === 'encuesta' ? 'Exportando…' : 'Descargar encuesta'}
+			</button>
+
+			<button
+				class="btn border-black"
+				type="button"
+				disabled={!canSubmit}
+				onclick={() => downloadCsv()}
+			>
+				{running === 'csv' ? 'Exportando…' : 'Descargar inscripciones'}
 			</button>
 
 			<button class="btn border-black" type="button" disabled={!canSubmit} onclick={downloadFotos}>

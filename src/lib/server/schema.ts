@@ -1,7 +1,7 @@
 /**
  * src/lib/server/schema.ts
  *
- * The `rsvps` DDL, kept free of any SvelteKit import so that both the app
+ * The `rsvps` and `encuesta` DDL, kept free of any SvelteKit import so that both the app
  * (src/lib/server/db.ts) and the standalone `bun run db:reset` script can use it.
  * The Neon client is passed in rather than created here.
  */
@@ -32,6 +32,29 @@ export async function createSchema(sql: Sql): Promise<void> {
       entrevista                      TEXT CHECK (entrevista IN ('si', 'no')),
       -- Vercel Blob pathnames, e.g. images/<uuid>-foto.jpg. Empty when no photos.
       fotos                           TEXT[] NOT NULL DEFAULT '{}'
+    );
+  `;
+}
+
+/**
+ * The post-event survey (the site's homepage). It lives in the same database as
+ * `rsvps` but shares nothing with it, so neither table's lifecycle touches the
+ * other: `bun run reset` still only drops `rsvps`.
+ */
+export async function createEncuestaSchema(sql: Sql): Promise<void> {
+	await sql`
+    CREATE TABLE IF NOT EXISTS encuesta (
+      id              SERIAL PRIMARY KEY,
+      creado_en       TIMESTAMPTZ NOT NULL DEFAULT now(),
+      lo_mejor        TEXT NOT NULL CHECK (lo_mejor IN
+                        ('actividades', 'gastronomia', 'amenizacion', 'informacion_corporativa', 'otro')),
+      -- Only filled when lo_mejor is 'otro', and then required.
+      lo_mejor_otro   TEXT CHECK ((lo_mejor = 'otro') = (lo_mejor_otro IS NOT NULL)),
+      a_mejorar       TEXT NOT NULL CHECK (a_mejorar IN
+                        ('actividades', 'gastronomia', 'amenizacion', 'informacion_corporativa', 'otro')),
+      a_mejorar_otro  TEXT CHECK ((a_mejorar = 'otro') = (a_mejorar_otro IS NOT NULL)),
+      valoracion      SMALLINT NOT NULL CHECK (valoracion BETWEEN 0 AND 10),
+      comentario      TEXT NOT NULL
     );
   `;
 }

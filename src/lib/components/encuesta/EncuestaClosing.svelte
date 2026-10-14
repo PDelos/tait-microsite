@@ -22,13 +22,13 @@
 	);
 </script>
 
-<!-- Sized by its content on a phone (a full screen would leave a gap above the
- photo); a full screen on desktop, like every other section. The logo sits in its
- own row above the photo, as in Figma, so it can never overlap it. -->
+<!-- A full screen like every other section (min- rather than fixed height, so a
+ very short phone grows it instead of clipping). The logo sits in its own row
+ above the photo, as in Figma, so it can never overlap it. -->
 <section
 	id="encuesta_closing"
 	bind:this={section}
-	class="h-auto items-center justify-center gap-10 px-5 py-16 lg:min-h-dvh lg:gap-[3.125rem] lg:px-0 lg:py-10"
+	class="h-auto min-h-dvh items-center justify-center gap-10 px-5 py-8 lg:gap-[3.125rem] lg:px-0 lg:py-10"
 >
 	<div class="flex w-full justify-end lg:w-[87.45rem]">
 		<img data-reveal="closing-logo" class="h-24 lg:h-[9.5rem]" src={logo} alt="Tait España" />

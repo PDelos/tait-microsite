@@ -22,6 +22,7 @@ export const ASPECTO_VALUES: readonly string[] = ASPECTOS.map((a) => a.value);
 export const VALORACIONES = Array.from({ length: 11 }, (_, i) => i);
 
 /** Free-text limits, mirrored by maxlength in the markup. */
+export const MAX_NOMBRE = 120;
 export const MAX_OTRO = 200;
 export const MAX_COMENTARIO = 2000;
 

@@ -25,6 +25,7 @@ function fecha(value: string): string {
 const COLUMNS: { header: string; value: (r: Encuesta) => string }[] = [
 	{ header: 'ID', value: (r) => String(r.id) },
 	{ header: 'Fecha de respuesta', value: (r) => fecha(r.creado_en) },
+	{ header: 'Nombre y Apellido', value: (r) => r.nombre ?? '' },
 	{ header: 'Lo que más ha gustado', value: (r) => aspectoLabel(r.lo_mejor) },
 	{ header: 'Lo que más ha gustado (otro)', value: (r) => r.lo_mejor_otro ?? '' },
 	{ header: 'Qué puede mejorar', value: (r) => aspectoLabel(r.a_mejorar) },

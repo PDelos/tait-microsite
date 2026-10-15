@@ -2,9 +2,10 @@
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { reveal, HIDDEN, SHOWN } from '$lib/anim';
-	import { ASPECTOS, VALORACIONES, MAX_COMENTARIO, MAX_OTRO } from '$lib/encuesta';
+	import { ASPECTOS, VALORACIONES, MAX_COMENTARIO, MAX_NOMBRE, MAX_OTRO } from '$lib/encuesta';
 
 	// --- Answers ---
+	let nombre = $state('');
 	let loMejor = $state<string | null>(null);
 	let loMejorOtro = $state('');
 	let aMejorar = $state<string | null>(null);
@@ -16,8 +17,11 @@
 	const aspectoValid = (value: string | null, otro: string) =>
 		value !== null && (value !== 'otro' || otro.trim().length > 0);
 
+	// The name rides with the first mobile step, so it is validated with it.
 	const aspectosValid = $derived(
-		aspectoValid(loMejor, loMejorOtro) && aspectoValid(aMejorar, aMejorarOtro)
+		nombre.trim().length > 0 &&
+			aspectoValid(loMejor, loMejorOtro) &&
+			aspectoValid(aMejorar, aMejorarOtro)
 	);
 	const opinionValid = $derived(valoracion !== null && comentario.trim().length > 0);
 	const valid = $derived(aspectosValid && opinionValid);
@@ -25,7 +29,7 @@
 	// --- Steps ---
 	// Same approach as the RSVP form (src/lib/components/Form.svelte):
 	// Desktop: 'form' (both columns, exactly as in Figma)
-	// Mobile:  'aspectos' (the two radio questions) → 'opinion' (score + comment)
+	// Mobile:  'aspectos' (name + the two radio questions) → 'opinion' (score + comment)
 	// so a phone screen never has to hold all four questions at once. Steps stay
 	// mounted (hidden with CSS, never unmounted) so every input is always part of
 	// the submitted FormData.
@@ -145,10 +149,10 @@
 	otro: string,
 	setOtro: (v: string) => void
 )}
-	<fieldset class="flex flex-col gap-[0.75rem] lg:gap-[0.625rem]">
-		<legend class="field-label mb-[1rem] lg:mb-[0.625rem]">{title}</legend>
+	<fieldset class="flex flex-col gap-[0.5rem] lg:gap-[0.25rem]">
+		<legend class="field-label mb-[1rem] lg:mb-[0.75rem]">{title}</legend>
 		{#each ASPECTOS as opt (opt.value)}
-			<label class="option py-[1rem] lg:py-[0.625rem]">
+			<label class="option py-[0.5rem] lg:py-[0.25rem]">
 				<input
 					type="radio"
 					{name}
@@ -221,12 +225,29 @@
 						Hemos recibido tu respuesta. Tu opinión nos ayuda a seguir mejorando.
 					</p>
 				{:else}
+					<!-- Mobile: one column in DOM order, so the name opens step 1.
+					 Desktop: a two-column grid; the name moves to the top of the right
+					 column, which keeps both columns about the same height. -->
 					<div
 						data-reveal-children="encuesta-fields"
-						class="flex w-full flex-col px-[2.5rem] lg:w-[75.5rem] lg:flex-row lg:gap-[1.25rem] lg:px-0"
+						class="flex w-full flex-col gap-12 px-[2.5rem] lg:grid lg:w-[75.5rem] lg:grid-cols-[33.5rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] lg:gap-x-[1.25rem] lg:gap-y-[2rem] lg:px-0"
 					>
+						<div class="field lg:col-start-2 lg:row-start-1 {showAspectos ? 'flex' : 'hidden'}">
+							<label class="field-label" for="nombre">Nombre y Apellido</label>
+							<input
+								id="nombre"
+								type="text"
+								name="nombre"
+								placeholder="Escribir aquí"
+								autocomplete="name"
+								maxlength={MAX_NOMBRE}
+								bind:value={nombre}
+								class="input rounded-full py-3 lg:py-[0.625rem]"
+							/>
+						</div>
+
 						<div
-							class="flex-col gap-12 lg:w-[33.5rem] lg:shrink-0 lg:gap-[5.2rem] {showAspectos
+							class="flex-col gap-12 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:gap-[2.5rem] {showAspectos
 								? 'flex'
 								: 'hidden'}"
 						>
@@ -249,10 +270,12 @@
 						</div>
 
 						<div
-							class="flex-col gap-16 lg:flex-1 lg:gap-[2.5rem] {showOpinion ? 'flex' : 'hidden'}"
+							class="flex-col gap-16 lg:col-start-2 lg:row-start-2 lg:gap-[2rem] {showOpinion
+								? 'flex'
+								: 'hidden'}"
 						>
 							<fieldset class="flex flex-col">
-								<legend class="field-label mb-[3rem] lg:mb-[2rem] lg:leading-[1.34]">
+								<legend class="field-label mb-[3rem] lg:mb-[1.25rem] lg:leading-[1.34]">
 									Del 0 al 10 siendo 0 la peor nota y 10 la mejor, ¿cómo valorarías la celebración
 									del 10 aniversario TAIT?
 								</legend>
@@ -281,7 +304,7 @@
 									placeholder="Escribir aquí"
 									maxlength={MAX_COMENTARIO}
 									bind:value={comentario}
-									class="input h-[28rem] resize-none rounded-2xl py-3 text-(length:--text-lead) lg:h-[14.5625rem] lg:rounded-[0.625rem] lg:px-[1.1875rem] lg:py-[0.625rem]"
+									class="input h-[28rem] resize-none rounded-2xl py-3 text-(length:--text-lead) lg:h-[11rem] lg:rounded-[0.625rem] lg:px-[1.1875rem] lg:py-[0.625rem]"
 								></textarea>
 							</div>
 						</div>

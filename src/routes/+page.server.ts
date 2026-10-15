@@ -1,6 +1,6 @@
 import { fail, type Actions } from '@sveltejs/kit';
 import type { NewEncuesta } from '$lib/server/db';
-import { ASPECTO_VALUES, MAX_COMENTARIO, MAX_OTRO, type Aspecto } from '$lib/encuesta';
+import { ASPECTO_VALUES, MAX_COMENTARIO, MAX_NOMBRE, MAX_OTRO, type Aspecto } from '$lib/encuesta';
 
 // $lib/server/db throws at import time when DATABASE_URL is missing, so it is
 // imported inside the action — the page itself stays loadable either way.
@@ -35,6 +35,9 @@ export const actions: Actions = {
 		}
 
 		// Server-side mirror of the client validation (never trust the client).
+		const nombre = str(data, 'nombre');
+		const nombreOk = nombre.length > 0 && nombre.length <= MAX_NOMBRE;
+
 		const loMejor = aspecto(data, 'lo_mejor');
 		const aMejorar = aspecto(data, 'a_mejorar');
 
@@ -46,7 +49,7 @@ export const actions: Actions = {
 		const comentario = str(data, 'comentario');
 		const comentarioOk = comentario.length > 0 && comentario.length <= MAX_COMENTARIO;
 
-		if (!loMejor || !aMejorar || !valoracionOk || !comentarioOk) {
+		if (!nombreOk || !loMejor || !aMejorar || !valoracionOk || !comentarioOk) {
 			return fail(400, { error: INVALID });
 		}
 
@@ -55,6 +58,7 @@ export const actions: Actions = {
 			await ensureEncuestaSchema();
 
 			const respuesta: NewEncuesta = {
+				nombre,
 				lo_mejor: loMejor.value,
 				lo_mejor_otro: loMejor.otro,
 				a_mejorar: aMejorar.value,

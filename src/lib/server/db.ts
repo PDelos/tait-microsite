@@ -102,14 +102,17 @@ export interface Encuesta {
 	a_mejorar_otro: string | null;
 	valoracion: number;
 	comentario: string;
+	/** Null only on the few answers sent before the form asked for it. */
+	nombre: string | null;
 }
 
 export type NewEncuesta = Omit<Encuesta, 'id' | 'creado_en'>;
 
 export async function insertEncuesta(input: NewEncuesta): Promise<void> {
 	await sql`
-    INSERT INTO encuesta (lo_mejor, lo_mejor_otro, a_mejorar, a_mejorar_otro, valoracion, comentario)
+    INSERT INTO encuesta (nombre, lo_mejor, lo_mejor_otro, a_mejorar, a_mejorar_otro, valoracion, comentario)
     VALUES (
+      ${input.nombre},
       ${input.lo_mejor}, ${input.lo_mejor_otro},
       ${input.a_mejorar}, ${input.a_mejorar_otro},
       ${input.valoracion}, ${input.comentario}

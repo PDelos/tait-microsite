@@ -57,6 +57,13 @@ export async function createEncuestaSchema(sql: Sql): Promise<void> {
       comentario      TEXT NOT NULL
     );
   `;
+
+	// Added after launch, once answers already existed. Nullable so those first
+	// answers (sent before the form asked for a name) stay valid; the form and
+	// the server action require it for every new answer. ADD COLUMN IF NOT EXISTS
+	// makes this a no-op on a table that already has it, so it is safe to run on
+	// every cold start, exactly like the CREATE above.
+	await sql`ALTER TABLE encuesta ADD COLUMN IF NOT EXISTS nombre TEXT`;
 }
 
 /** Destructive. Only the one-shot `bun run db:reset` script calls this. */
